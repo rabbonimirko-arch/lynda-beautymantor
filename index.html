@@ -12,6 +12,7 @@
   *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
   html,body{width:100%;height:100%;background:#000;color:#fff;overflow:hidden;position:fixed;touch-action:manipulation;overscroll-behavior:none;}
 
+  /* AVATAR (cover 16:9, fullscreen) */
   .stage{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;background:#000;overflow:hidden;z-index:1;}
   #avatarFrame{
     position:absolute;top:50%;left:50%;
@@ -22,6 +23,7 @@
     #avatarFrame{width:100vw;height:56.25vw;min-width:auto;min-height:auto;}
   }
 
+  /* TOP BUTTONS */
   .topUI{position:fixed;top:12px;left:12px;z-index:9999;display:flex;gap:10px;flex-wrap:wrap;max-width:calc(100vw - 24px);}
   .btn{
     border:none;padding:10px 12px;border-radius:14px;
@@ -33,6 +35,7 @@
   .btn.danger{ background:rgba(255,60,60,0.55); border-color:rgba(255,60,60,0.80); }
   .btn:disabled{opacity:0.55;cursor:not-allowed;}
 
+  /* CAMERA OVERLAY FULLSCREEN 9:16 */
   .camOverlay{position:fixed;inset:0;z-index:99999;background:#000;display:none;}
   .camHeader{
     position:absolute;top:0;left:0;right:0;z-index:5;
@@ -67,6 +70,7 @@
     box-shadow:0 0 18px rgba(255,79,160,0.35);
   }
 
+  /* Center indicator */
   .centerIndicator{
     position:absolute;top:calc(64px + env(safe-area-inset-top));
     left:50%;transform:translateX(-50%);z-index:6;
@@ -79,24 +83,54 @@
   .dot{width:10px;height:10px;border-radius:999px;background:rgba(255,120,120,0.95);box-shadow:0 0 14px rgba(255,120,120,0.45);}
   .centerIndicator.ok .dot{background:rgba(120,255,160,0.95);box-shadow:0 0 14px rgba(120,255,160,0.45);}
 
+  /* Report sheet */
+  .sheet{
+    position:absolute;left:12px;right:12px;
+    bottom:calc(150px + env(safe-area-inset-bottom));
+    z-index:7;max-height:32dvh;overflow:auto;
+    padding:10px;border-radius:16px;border:1px solid rgba(255,255,255,0.12);
+    background:rgba(0,0,0,0.50);
+    backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
+    display:none;white-space:pre-wrap;font-size:12px;line-height:1.35;
+  }
+
+  /* Paste area */
+  .pasteBox{
+    position:absolute;left:12px;right:12px;
+    bottom:calc(92px + env(safe-area-inset-bottom));
+    z-index:8;
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .pasteHint{
+    font-size:12px;opacity:0.92;
+    background:rgba(0,0,0,0.45);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:14px;padding:10px;
+    backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
+  }
+  textarea{
+    width:100%;
+    min-height:90px;
+    max-height:180px;
+    resize:none;
+    padding:10px 12px;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,0.14);
+    background:rgba(255,255,255,0.08);
+    color:#fff;
+    font-size:12px;
+    outline:none;
+  }
+
+  /* Bottom controls */
   .camControls{
-    position:absolute;left:0;right:0;bottom:0;z-index:6;
+    position:absolute;left:0;right:0;bottom:0;z-index:9;
     padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom));
     background:linear-gradient(to top, rgba(0,0,0,0.82), rgba(0,0,0,0.22));
     border-top:1px solid rgba(255,255,255,0.10);
     backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
   }
   .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
-
-  .sheet{
-    position:absolute;left:12px;right:12px;
-    bottom:calc(92px + env(safe-area-inset-bottom));
-    z-index:7;max-height:34dvh;overflow:auto;
-    padding:10px;border-radius:16px;border:1px solid rgba(255,255,255,0.12);
-    background:rgba(0,0,0,0.50);
-    backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
-    display:none;white-space:pre-wrap;font-size:12px;line-height:1.35;
-  }
 
   .toast{
     position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
@@ -107,12 +141,13 @@
   }
 </style>
 
-<!-- ✅ MediaPipe Face Detection (versione stabile) -->
+<!-- MediaPipe Face Detection (stabile) -->
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4/face_detection.js"></script>
 
 </head>
 <body>
 
+<!-- Avatar -->
 <div class="stage">
   <iframe
     id="avatarFrame"
@@ -122,12 +157,14 @@
   </iframe>
 </div>
 
+<!-- Top UI -->
 <div class="topUI">
   <button class="btn primary" id="openCamBtn">📷 Selfie PRO</button>
   <button class="btn" id="copyBtn" disabled>📋 Copia Report</button>
   <button class="btn" id="sendBtn" disabled>👩‍🎤 Invia all’Avatar</button>
 </div>
 
+<!-- Camera Overlay -->
 <div class="camOverlay" id="camOverlay">
   <div class="camHeader">
     <span>Beauty Mentor • Camera 9:16</span>
@@ -153,8 +190,25 @@
     </div>
   </div>
 
+  <!-- Report output -->
   <div class="sheet" id="sheet"></div>
 
+  <!-- Paste report -->
+  <div class="pasteBox">
+    <div class="pasteHint">
+      💡 <b>Non vedo direttamente la foto</b>, ma posso leggere il report dell’analisi.<br>
+      Incollalo qui e ti preparo la routine, oppure usa Scatta → Analizza.
+    </div>
+
+    <textarea id="reportInput" placeholder="Incolla qui il report JSON / testo dell’analisi…"></textarea>
+
+    <div class="row">
+      <button class="btn" id="usePastedBtn">🧠 Genera routine</button>
+      <button class="btn" id="clearPastedBtn">🧽 Svuota</button>
+    </div>
+  </div>
+
+  <!-- Camera controls -->
   <div class="camControls">
     <div class="row">
       <button class="btn" id="startBtn">Avvia Camera</button>
@@ -189,6 +243,10 @@
 
   const centerIndicator = document.getElementById('centerIndicator');
   const centerText = document.getElementById('centerText');
+
+  const reportInput = document.getElementById('reportInput');
+  const usePastedBtn = document.getElementById('usePastedBtn');
+  const clearPastedBtn = document.getElementById('clearPastedBtn');
 
   let stream = null;
   let detector = null;
@@ -236,11 +294,8 @@
     setCenter(false, "Centra il volto");
   }
 
-  // ✅ FIX: costruttore compatibile con tutte le versioni
   function getFaceDetectionCtor(){
-    // some builds: window.FaceDetection is the class
     if (typeof window.FaceDetection === "function") return window.FaceDetection;
-    // other builds: window.FaceDetection.FaceDetection is the class
     if (window.FaceDetection && typeof window.FaceDetection.FaceDetection === "function") return window.FaceDetection.FaceDetection;
     return null;
   }
@@ -249,13 +304,7 @@
     if(detector) return detector;
 
     const Ctor = getFaceDetectionCtor();
-    if (!Ctor) {
-      sheet.style.display = "block";
-      sheet.textContent =
-        "❌ FaceDetection non disponibile.\n" +
-        "Controlla che lo script @mediapipe/face_detection sia caricato correttamente.\n";
-      throw new Error("FaceDetection constructor not found");
-    }
+    if(!Ctor) throw new Error("FaceDetection constructor not found");
 
     detector = new Ctor({
       locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4/${file}`
@@ -295,9 +344,7 @@
 
   async function detectionLoop(){
     if(!stream) return;
-    try{
-      await detector.send({ image: video });
-    }catch{}
+    try{ await detector.send({ image: video }); }catch{}
     requestAnimationFrame(detectionLoop);
   }
 
@@ -340,10 +387,7 @@
       console.error(err);
       alert("ERRORE CAMERA: " + (err?.name || "unknown") + " | " + (err?.message || ""));
       sheet.style.display='block';
-      sheet.textContent =
-        "❌ ERRORE\n\n" +
-        (err?.message || err) + "\n\n" +
-        "Se è un errore FaceDetection, controlla connessione e CDN.\n";
+      sheet.textContent = "❌ ERRORE CAMERA\n" + (err?.message || err);
     }
   };
 
@@ -412,14 +456,27 @@
     return out.toDataURL('image/jpeg', 0.78);
   }
 
-  function buildReportText(payload){
+  function buildReportTextFromPayload(payload){
     const s = payload?.summary || {};
+    const r = payload?.routine || {};
+    const m = payload?.makeup || {};
+    const h = payload?.hair || {};
     return [
       "ANALISI SELFIE (Beauty Mentor):",
       `- Beauty Score: ${payload?.beauty_score ?? "--"}/100`,
       `- Tipo pelle: ${s.skin_type ?? "--"}`,
       `- Concerns: ${(s.concerns || []).join(", ") || "--"}`,
       s.notes ? `- Note: ${s.notes}` : "",
+      "",
+      "ROUTINE:",
+      `Mattina: ${(r.morning || []).join(" → ") || "--"}`,
+      `Sera: ${(r.night || []).join(" → ") || "--"}`,
+      "",
+      "MAKEUP:",
+      `- ${(m.tips || []).join(" | ") || "--"}`,
+      "",
+      "CAPELLI/CUTE:",
+      `- ${(h.tips || []).join(" | ") || "--"}`,
       "",
       "Istruzioni: Rispondi in modo elegante e professionale, senza consigli medici."
     ].filter(Boolean).join("\n");
@@ -449,7 +506,7 @@
 
       const payload = await resp.json();
       lastReportPayload = payload;
-      lastReportText = buildReportText(payload);
+      lastReportText = buildReportTextFromPayload(payload);
 
       sheet.textContent = lastReportText;
 
@@ -465,6 +522,39 @@
     }finally{
       analyzeBtn.disabled = false;
     }
+  };
+
+  // ✅ NEW: usa report incollato
+  usePastedBtn.onclick = () => {
+    const txt = (reportInput.value || "").trim();
+    if(!txt){
+      showToast("Incolla un report prima ✍️");
+      return;
+    }
+
+    // Creiamo un testo elegante pronto per l’avatar
+    lastReportText =
+      "REPORT INCOLLATO (Beauty Mentor):\n\n" +
+      txt +
+      "\n\nRichiesta: leggi questo report e prepara una routine skincare + capelli + makeup (stile elegante, professionale, niente consigli medici).";
+
+    lastReportPayload = { pasted_report: txt };
+
+    sheet.style.display = 'block';
+    sheet.textContent =
+      "✅ Report incollato pronto.\n\n" +
+      "Ora puoi premere “Copia Report” o “Invia all’Avatar”.\n\n" +
+      "Suggerimento: se vuoi una routine più precisa, usa anche Scatta → Analizza.";
+
+    copyBtn.disabled = false;
+    sendBtn.disabled = false;
+
+    showToast("Report pronto ✅");
+  };
+
+  clearPastedBtn.onclick = () => {
+    reportInput.value = "";
+    showToast("Svuotato");
   };
 
   copyBtn.onclick = async () => {
