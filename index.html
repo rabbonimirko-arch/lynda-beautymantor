@@ -1,190 +1,616 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Beauty Mentor AI • Camera Debug</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Beauty Mentor • Avatar + Selfie PRO</title>
 
 <style>
   *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
-  html,body{width:100%;height:100%;background:#000;overflow:hidden;color:#fff}
-  .stage{position:fixed;inset:0;z-index:1}
-  iframe{position:absolute;inset:0;width:100%;height:100%;border:none}
-
-  #openCamera{
-    position:fixed;top:20px;left:20px;z-index:9999;
-    border:none;padding:12px 16px;border-radius:12px;
-    background:#ff4fa0;color:#fff;font-size:14px
+  html,body{
+    width:100%;height:100%;
+    background:#000;color:#fff;
+    overflow:hidden;position:fixed;
+    touch-action:manipulation;
+    overscroll-behavior:none;
   }
 
-  .panel{position:fixed;inset:0;background:#000;z-index:99999;display:none}
-  .videoWrap{position:absolute;inset:0;overflow:hidden}
-  video{width:100%;height:100%;object-fit:cover;background:#000}
+  /* AVATAR (cover 16:9, fullscreen) */
+  .stage{
+    position:fixed;inset:0;
+    width:100vw;height:100vh;height:100dvh;
+    background:#000;overflow:hidden;
+    z-index:1;
+  }
+  #avatarFrame{
+    position:absolute;
+    top:50%;left:50%;
+    width:177.78vh;
+    height:100vh;height:100dvh;
+    min-width:100vw;
+    min-height:56.25vw;
+    transform:translate(-50%,-50%);
+    border:none;background:#000;
+  }
+  @media (min-aspect-ratio: 16/9){
+    #avatarFrame{width:100vw;height:56.25vw;min-width:auto;min-height:auto;}
+  }
+
+  /* TOP BUTTONS */
+  .topUI{
+    position:fixed;top:12px;left:12px;
+    z-index:9999;
+    display:flex;gap:10px;flex-wrap:wrap;
+    max-width:calc(100vw - 24px);
+  }
+  .btn{
+    border:none;
+    padding:10px 12px;
+    border-radius:14px;
+    background:rgba(255,255,255,0.12);
+    border:1px solid rgba(255,255,255,0.14);
+    color:#fff;font-size:14px;
+    cursor:pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .btn.primary{ background:rgba(255,79,160,0.75); border-color:rgba(255,79,160,0.95); }
+  .btn:disabled{opacity:0.55;cursor:not-allowed;}
+
+  /* CAMERA OVERLAY FULLSCREEN 9:16 */
+  .camOverlay{
+    position:fixed;inset:0;
+    z-index:99999;
+    background:#000;
+    display:none;
+  }
+
+  .camHeader{
+    position:absolute;top:0;left:0;right:0;
+    z-index:5;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px;
+    padding-top:calc(12px + env(safe-area-inset-top));
+    background:linear-gradient(to bottom, rgba(0,0,0,0.78), rgba(0,0,0,0.25));
+    border-bottom:1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    font-weight:800;
+  }
+  .btn.danger{ background:rgba(255,60,60,0.55); border-color:rgba(255,60,60,0.80); }
+
+  .viewport{
+    position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  .videoWrap{
+    position:relative;
+    width:min(100vw, calc(100dvh * 9 / 16));
+    height:min(100dvh, calc(100vw * 16 / 9));
+    aspect-ratio:9/16;
+    overflow:hidden;
+    background:#000;
+    border-radius:18px;
+    border:1px solid rgba(255,255,255,0.12);
+  }
+  @media (max-aspect-ratio: 9/16){
+    .videoWrap{
+      width:100vw;height:100dvh;border-radius:0;border:none;
+    }
+  }
+  video,canvas{width:100%;height:100%;object-fit:cover;display:block}
 
   .faceFrame{
-    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-    width:70%;height:70%;border:3px solid rgba(255,255,255,.6);border-radius:40px;
+    position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    pointer-events:none;
+  }
+  .frameShape{
+    width:72%;height:78%;
+    border:2px solid rgba(255,255,255,0.55);
+    border-radius:46px;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.18);
+  }
+  .hintText{
+    position:absolute;bottom:96px;left:12px;right:12px;
+    text-align:center;font-size:12px;opacity:0.92;
   }
 
-  .indicator{
-    position:absolute;top:60px;left:50%;transform:translateX(-50%);
-    padding:8px 14px;border-radius:30px;background:rgba(0,0,0,.6);
-    border:1px solid rgba(255,255,255,.2);font-size:14px;display:flex;gap:8px;align-items:center;
+  .faceBox{
+    position:absolute;border:2px solid rgba(255,79,160,0.95);
+    border-radius:14px;display:none;pointer-events:none;
+    box-shadow:0 0 18px rgba(255,79,160,0.35);
   }
-  .dot{width:10px;height:10px;border-radius:50%;background:#ff4444}
-  .indicator.ok .dot{background:#00ff7b}
 
-  .controls{
-    position:absolute;left:0;right:0;bottom:0;
-    padding:15px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;
-    background:linear-gradient(transparent,rgba(0,0,0,.9));
+  /* Center indicator */
+  .centerIndicator{
+    position:absolute;
+    top:calc(64px + env(safe-area-inset-top));
+    left:50%;transform:translateX(-50%);
+    z-index:6;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 12px;border-radius:999px;
+    background:rgba(0,0,0,0.45);
+    border:1px solid rgba(255,255,255,0.14);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    font-size:13px;font-weight:700;
   }
-  button{
-    border:none;padding:12px 16px;border-radius:12px;
-    background:rgba(255,255,255,.10);color:#fff;font-size:14px;
+  .dot{
+    width:10px;height:10px;border-radius:999px;
+    background:rgba(255,120,120,0.95);
+    box-shadow:0 0 14px rgba(255,120,120,0.45);
   }
-  .primary{background:#ff4fa0}
-  .close{background:#ff4444}
+  .centerIndicator.ok .dot{
+    background:rgba(120,255,160,0.95);
+    box-shadow:0 0 14px rgba(120,255,160,0.45);
+  }
 
-  .result{
-    position:absolute;left:12px;right:12px;bottom:90px;
-    background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.15);
-    border-radius:12px;padding:10px;max-height:38vh;overflow:auto;
-    display:none;font-size:12px;white-space:pre-wrap;line-height:1.35;
+  /* Bottom controls */
+  .camControls{
+    position:absolute;left:0;right:0;bottom:0;z-index:6;
+    padding:12px;
+    padding-bottom:calc(12px + env(safe-area-inset-bottom));
+    background:linear-gradient(to top, rgba(0,0,0,0.82), rgba(0,0,0,0.22));
+    border-top:1px solid rgba(255,255,255,0.10);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+
+  .sheet{
+    position:absolute;left:12px;right:12px;
+    bottom:calc(92px + env(safe-area-inset-bottom));
+    z-index:7;
+    max-height:34dvh;overflow:auto;
+    padding:10px;border-radius:16px;
+    border:1px solid rgba(255,255,255,0.12);
+    background:rgba(0,0,0,0.50);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display:none;
+    white-space:pre-wrap;
+    font-size:12px;line-height:1.35;
+  }
+
+  .toast{
+    position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
+    z-index:999999;
+    background:rgba(0,0,0,0.74);
+    border:1px solid rgba(255,255,255,0.14);
+    padding:10px 12px;border-radius:999px;
+    font-size:13px;display:none;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 </style>
-</head>
 
+<!-- MediaPipe Face Detection -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js"></script>
+
+</head>
 <body>
 
+<!-- Avatar -->
 <div class="stage">
   <iframe
-    src="https://embed.liveavatar.com/v1/8d2b6987-3ad8-49bc-860f-e6f00c939b8e"
-    allow="camera; microphone; autoplay">
+    id="avatarFrame"
+    src="https://embed.liveavatar.com/v1/8d2b6987-3ad8-49bc-860f-e6f00c939b8e?background=000000"
+    allow="microphone; autoplay; fullscreen"
+    title="LiveAvatar">
   </iframe>
 </div>
 
-<button id="openCamera">📷 Selfie</button>
+<!-- Top UI -->
+<div class="topUI">
+  <button class="btn primary" id="openCamBtn">📷 Selfie PRO</button>
+  <button class="btn" id="copyBtn" disabled>📋 Copia Report</button>
+  <button class="btn" id="sendBtn" disabled>👩‍🎤 Invia all’Avatar</button>
+</div>
 
-<div class="panel" id="panel">
-  <div class="videoWrap">
-    <video id="video" autoplay muted playsinline webkit-playsinline></video>
-    <div class="faceFrame"></div>
-    <div class="indicator" id="indicator">
-      <div class="dot"></div>
-      <span id="indicatorText">Centra il volto</span>
+<!-- Camera Overlay -->
+<div class="camOverlay" id="camOverlay">
+  <div class="camHeader">
+    <span>Beauty Mentor • Camera 9:16</span>
+    <button class="btn danger" id="closeCamBtn">Chiudi</button>
+  </div>
+
+  <div class="centerIndicator" id="centerIndicator">
+    <span class="dot"></span>
+    <span id="centerText">Centra il volto</span>
+  </div>
+
+  <div class="viewport">
+    <div class="videoWrap">
+      <video id="video" autoplay muted playsinline webkit-playsinline></video>
+      <canvas id="canvas" style="display:none;"></canvas>
+
+      <div class="faceFrame">
+        <div class="frameShape"></div>
+        <div class="hintText">Viso nella cornice • luce naturale • niente mano</div>
+      </div>
+
+      <div class="faceBox" id="faceBox"></div>
     </div>
   </div>
 
-  <div class="result" id="result"></div>
+  <div class="sheet" id="sheet"></div>
 
-  <div class="controls">
-    <button id="startCamera" class="primary">Avvia</button>
-    <button id="close" class="close">Chiudi</button>
+  <div class="camControls">
+    <div class="row">
+      <button class="btn" id="startBtn">Avvia Camera</button>
+      <button class="btn" id="snapBtn" disabled>Scatta</button>
+      <button class="btn primary" id="analyzeBtn" disabled>🤖 Analizza</button>
+    </div>
   </div>
 </div>
 
-<script>
-  const panel = document.getElementById("panel");
-  const openCamera = document.getElementById("openCamera");
-  const startCameraBtn = document.getElementById("startCamera");
-  const closeBtn = document.getElementById("close");
-  const video = document.getElementById("video");
-  const result = document.getElementById("result");
+<div class="toast" id="toast"></div>
 
-  const indicator = document.getElementById("indicator");
-  const indicatorText = document.getElementById("indicatorText");
+<script>
+  const camOverlay = document.getElementById('camOverlay');
+  const toast = document.getElementById('toast');
+
+  const openCamBtn = document.getElementById('openCamBtn');
+  const closeCamBtn = document.getElementById('closeCamBtn');
+
+  const startBtn = document.getElementById('startBtn');
+  const snapBtn = document.getElementById('snapBtn');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+
+  const copyBtn = document.getElementById('copyBtn');
+  const sendBtn = document.getElementById('sendBtn');
+
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const sheet = document.getElementById('sheet');
+
+  const avatarFrame = document.getElementById('avatarFrame');
+  const faceBoxEl = document.getElementById('faceBox');
+
+  const centerIndicator = document.getElementById('centerIndicator');
+  const centerText = document.getElementById('centerText');
 
   let stream = null;
+  let detector = null;
+  let lastFace = null;
+  let faceOk = false;
 
-  function showBox(text){
-    result.style.display = "block";
-    result.textContent = text;
+  let lastReportText = "";
+  let lastReportPayload = null;
+
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.style.display = 'block';
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(()=> toast.style.display='none', 2200);
   }
+
+  function setCenter(ok, txt){
+    centerIndicator.classList.toggle('ok', !!ok);
+    centerText.textContent = txt;
+  }
+
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+  openCamBtn.onclick = () => {
+    camOverlay.style.display = 'block';
+    sheet.style.display = 'none';
+    setCenter(false, "Centra il volto");
+  };
+
+  closeCamBtn.onclick = () => {
+    stopCamera();
+    camOverlay.style.display = 'none';
+  };
 
   function stopCamera(){
     if(stream){
-      stream.getTracks().forEach(t => t.stop());
+      stream.getTracks().forEach(t=>t.stop());
       stream = null;
     }
+    snapBtn.disabled = true;
+    analyzeBtn.disabled = true;
+    lastFace = null;
+    faceOk = false;
+    faceBoxEl.style.display = 'none';
+    setCenter(false, "Centra il volto");
   }
 
-  openCamera.onclick = () => {
-    panel.style.display = "block";
-    indicator.classList.remove("ok");
-    indicatorText.textContent = "Centra il volto";
-    showBox(
-      `DEBUG CAMERA\n\n` +
-      `SecureContext (HTTPS): ${window.isSecureContext}\n` +
-      `URL: ${location.href}\n\n` +
-      `Premi "Avvia". Se fallisce vedrai un alert con il nome errore.\n` +
-      `Tip: se sei in Instagram/FB/WhatsApp, apri in Safari/Chrome.\n`
-    );
-  };
+  function initDetector(){
+    if(detector) return detector;
+    detector = new FaceDetection.FaceDetection({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`
+    });
+    detector.setOptions({ model:"short", minDetectionConfidence:0.6 });
 
-  closeBtn.onclick = () => {
-    stopCamera();
-    panel.style.display = "none";
-  };
+    detector.onResults((results)=>{
+      const dets = results?.detections || [];
+      if(!dets.length){
+        lastFace = null;
+        faceOk = false;
+        faceBoxEl.style.display = 'none';
+        setCenter(false, "Centra il volto");
+        return;
+      }
+      const bb = dets[0].boundingBox;
+      const xMin = bb.xCenter - bb.width/2;
+      const yMin = bb.yCenter - bb.height/2;
 
-  startCameraBtn.onclick = async () => {
-    showBox("Richiesta permesso camera…");
-
-    if (!window.isSecureContext) {
-      showBox(
-        "❌ BLOCCO SICUREZZA: pagina NON in HTTPS (secure context = false)\n\n" +
-        "Soluzione: apri questa pagina su Vercel (https://...) oppure localhost.\n"
-      );
-      return;
-    }
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      showBox("❌ getUserMedia non disponibile in questo browser/webview.\nApri in Safari/Chrome vero.");
-      return;
-    }
-
-    try {
-      stopCamera();
-
-      const constraints = {
-        audio: false,
-        video: {
-          facingMode: "user",
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
+      lastFace = {
+        xMin: clamp(xMin, 0, 1),
+        yMin: clamp(yMin, 0, 1),
+        width: clamp(bb.width, 0, 1),
+        height: clamp(bb.height, 0, 1)
       };
 
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
-      video.srcObject = stream;
+      const area = lastFace.width * lastFace.height;
+      faceOk = area > 0.08;
 
-      // iOS: force play
+      setCenter(faceOk, faceOk ? "Volto centrato" : "Avvicina il volto");
+      drawFaceBoxOverlay();
+    });
+
+    return detector;
+  }
+
+  async function detectionLoop(){
+    if(!stream) return;
+    try{
+      await detector.send({ image: video });
+    }catch{}
+    requestAnimationFrame(detectionLoop);
+  }
+
+  function drawFaceBoxOverlay(){
+    if(!lastFace){ faceBoxEl.style.display='none'; return; }
+    const wrap = video.parentElement;
+    const w = wrap.clientWidth;
+    const h = wrap.clientHeight;
+
+    faceBoxEl.style.display = 'block';
+    faceBoxEl.style.left = (lastFace.xMin * w) + "px";
+    faceBoxEl.style.top = (lastFace.yMin * h) + "px";
+    faceBoxEl.style.width = (lastFace.width * w) + "px";
+    faceBoxEl.style.height = (lastFace.height * h) + "px";
+  }
+
+  startBtn.onclick = async () => {
+    try{
+      if(!window.isSecureContext){
+        sheet.style.display='block';
+        sheet.textContent = "❌ La camera richiede HTTPS.\nApri questa pagina su Vercel (https://...).";
+        return;
+      }
+
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio:false,
+        video:{
+          facingMode:"user",
+          width:{ ideal:1280 },
+          height:{ ideal:720 }
+        }
+      });
+
+      video.srcObject = stream;
       await video.play().catch(()=>{});
 
-      indicator.classList.add("ok");
-      indicatorText.textContent = "Camera attiva";
-      showBox("✅ Camera avviata correttamente.\n\nSe ancora non vedi il video, prova ad aprire in Safari/Chrome e controlla i permessi del sito.");
-    } catch (err) {
+      initDetector();
+      snapBtn.disabled = false;
+      analyzeBtn.disabled = true;
+
+      showToast("Camera attiva ✅");
+      requestAnimationFrame(detectionLoop);
+    }catch(err){
       console.error(err);
-
-      // ✅ MODIFICA RICHIESTA: alert con errore reale
       alert("ERRORE CAMERA: " + (err?.name || "unknown") + " | " + (err?.message || ""));
-
-      showBox(
+      sheet.style.display='block';
+      sheet.textContent =
         "❌ ERRORE CAMERA\n\n" +
         "name: " + (err?.name || "unknown") + "\n" +
         "message: " + (err?.message || "") + "\n\n" +
         "Soluzioni:\n" +
-        "1) Lucchetto → Impostazioni sito → Fotocamera → Consenti\n" +
-        "2) Apri in Safari/Chrome (non browser in-app)\n" +
-        "3) Assicurati che sia HTTPS\n" +
-        "4) Chiudi altre app che usano la camera\n"
-      );
+        "• Lucchetto → Impostazioni sito → Fotocamera → Consenti\n" +
+        "• Apri in Safari/Chrome (non browser in-app)\n" +
+        "• Chiudi altre app che usano la camera\n";
+    }
+  };
+
+  snapBtn.onclick = () => {
+    if(!stream || !video.videoWidth) return;
+
+    // 9:16 canvas
+    const W=900, H=1600;
+    canvas.width=W; canvas.height=H;
+    const ctx = canvas.getContext('2d');
+
+    // cover crop draw
+    const vw = video.videoWidth, vh = video.videoHeight;
+    const targetAR = W/H, videoAR = vw/vh;
+    let sx=0,sy=0,sw=vw,sh=vh;
+    if(videoAR > targetAR){
+      sh = vh;
+      sw = Math.round(vh * targetAR);
+      sx = Math.round((vw - sw)/2);
+    }else{
+      sw = vw;
+      sh = Math.round(vw / targetAR);
+      sy = Math.round((vh - sh)/2);
+    }
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, W, H);
+
+    if(!lastFace){
+      sheet.style.display='block';
+      sheet.textContent = "Volto non rilevato. Inquadra il viso nella cornice e riprova.";
+      analyzeBtn.disabled = true;
+      showToast("Volto non rilevato ❌");
+      return;
+    }
+    if(!faceOk){
+      sheet.style.display='block';
+      sheet.textContent = "Volto troppo lontano. Avvicinati un po’ e riprova lo scatto.";
+      analyzeBtn.disabled = true;
+      showToast("Avvicina il volto 📏");
+      return;
+    }
+
+    analyzeBtn.disabled = false;
+    sheet.style.display='block';
+    sheet.textContent = "Selfie pronto ✅ Premi “Analizza”.";
+    showToast("Scatto OK 📸");
+  };
+
+  function cropFaceDataURL(){
+    const W = canvas.width, H = canvas.height;
+
+    let x = lastFace.xMin * W;
+    let y = lastFace.yMin * H;
+    let w = lastFace.width * W;
+    let h = lastFace.height * H;
+
+    const padX = w * 0.20;
+    const padY = h * 0.35;
+
+    x = clamp(x - padX, 0, W-1);
+    y = clamp(y - padY, 0, H-1);
+    w = clamp(w + padX*2, 1, W - x);
+    h = clamp(h + padY*2, 1, H - y);
+
+    const out = document.createElement('canvas');
+    const outW = 720;
+    const outH = clamp(Math.round(outW * (h / w)), 720, 960);
+    out.width = outW; out.height = outH;
+
+    const octx = out.getContext('2d');
+    octx.drawImage(canvas, x, y, w, h, 0, 0, out.width, out.height);
+
+    return out.toDataURL('image/jpeg', 0.78);
+  }
+
+  function buildReportText(payload){
+    const s = payload?.summary || {};
+    const r = payload?.routine || {};
+    const m = payload?.makeup || {};
+    const h = payload?.hair || {};
+    const met = payload?.metrics || {};
+
+    return [
+      "ANALISI SELFIE (Beauty Mentor):",
+      `- Beauty Score: ${payload?.beauty_score ?? "--"}/100`,
+      `- Tipo pelle: ${s.skin_type ?? "--"}`,
+      `- Concerns: ${(s.concerns || []).join(", ") || "--"}`,
+      s.notes ? `- Note: ${s.notes}` : "",
+      "",
+      "METRICHE (0-10):",
+      Object.keys(met).length ? (
+        [
+          `Uniformità: ${met.uniformity ?? "--"}`,
+          `Luminosità: ${met.brightness ?? "--"}`,
+          `Texture: ${met.texture ?? "--"}`,
+          `Idratazione: ${met.hydration ?? "--"}`,
+          `Pori: ${met.pores ?? "--"}`,
+          `Rossori: ${met.redness ?? "--"}`,
+          `Vitalità: ${met.vitality ?? "--"}`,
+          `Simmetria: ${met.symmetry ?? "--"}`,
+          `Armonia: ${met.harmony ?? "--"}`,
+          `Qualità Foto: ${met.photo_quality_factor ?? "--"} (${met.why_photo_quality ?? ""})`
+        ].join(" | ")
+      ) : "—",
+      "",
+      "ROUTINE:",
+      `Mattina: ${(r.morning || []).join(" → ") || "--"}`,
+      `Sera: ${(r.night || []).join(" → ") || "--"}`,
+      r.notes ? `Note: ${r.notes}` : "",
+      "",
+      "MAKEUP:",
+      `- ${(m.tips || []).join(" | ") || "--"}`,
+      "",
+      "CAPELLI/CUTE:",
+      `- ${(h.tips || []).join(" | ") || "--"}`,
+      "",
+      "Istruzioni: Rispondi in modo elegante e professionale, senza consigli medici."
+    ].filter(Boolean).join("\n");
+  }
+
+  analyzeBtn.onclick = async () => {
+    try{
+      analyzeBtn.disabled = true;
+      sheet.style.display='block';
+      sheet.textContent = "Analisi in corso… 🤖";
+
+      if(!lastFace || !faceOk){
+        sheet.textContent = "Volto non valido. Avvicina e riprova lo scatto.";
+        analyzeBtn.disabled = false;
+        return;
+      }
+
+      const faceDataUrl = cropFaceDataURL();
+
+      const resp = await fetch("/api/analyze-skin", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          image_data_url: faceDataUrl,
+          lang: document.documentElement.lang || "it"
+        })
+      });
+
+      if(!resp.ok){
+        const t = await resp.text();
+        throw new Error(t || "Errore API");
+      }
+
+      const payload = await resp.json();
+      lastReportPayload = payload;
+      lastReportText = buildReportText(payload);
+
+      sheet.textContent = lastReportText;
+
+      copyBtn.disabled = false;
+      sendBtn.disabled = false;
+
+      showToast("Analisi completata ✅");
+    }catch(err){
+      console.error(err);
+      sheet.style.display='block';
+      sheet.textContent = "Errore analisi.\nDettaglio: " + (err?.message || err);
+      showToast("Errore analisi ❌");
+    }finally{
+      analyzeBtn.disabled = false;
+    }
+  };
+
+  copyBtn.onclick = async () => {
+    try{
+      await navigator.clipboard.writeText(lastReportText || "");
+      showToast("Copiato 📋");
+    }catch{
+      showToast("Copia non riuscita");
+    }
+  };
+
+  sendBtn.onclick = () => {
+    if(!lastReportText) return;
+    try{
+      avatarFrame.contentWindow.postMessage({
+        type:"beauty_mentor_analysis",
+        text:lastReportText,
+        payload:lastReportPayload
+      }, "*");
+      showToast("Inviato all’avatar (se supportato) 👩‍🎤");
+    }catch{
+      showToast("Invio diretto non supportato. Usa Copia Report.");
     }
   };
 
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) stopCamera();
+    if(document.hidden) stopCamera();
   });
 </script>
 
