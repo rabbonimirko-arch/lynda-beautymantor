@@ -79,7 +79,7 @@
   <div class="result" id="result"></div>
 
   <div class="controls">
-    <button id="startCamera">Avvia</button>
+    <button id="startCamera" class="primary">Avvia</button>
     <button id="close" class="close">Chiudi</button>
   </div>
 </div>
@@ -102,23 +102,9 @@
     result.textContent = text;
   }
 
-  async function deviceInfo(){
-    try{
-      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-        return "enumerateDevices NON disponibile in questo browser.";
-      }
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const cams = devices.filter(d => d.kind === "videoinput");
-      return `Camere rilevate: ${cams.length}\n` +
-             cams.map((c,i)=>`- ${i+1}: ${c.label || "(label non disponibile finché non autorizzi)"}`).join("\n");
-    }catch(e){
-      return "Errore enumerateDevices: " + (e?.name || "") + " " + (e?.message || e);
-    }
-  }
-
   function stopCamera(){
     if(stream){
-      stream.getTracks().forEach(t=>t.stop());
+      stream.getTracks().forEach(t => t.stop());
       stream = null;
     }
   }
@@ -130,9 +116,9 @@
     showBox(
       `DEBUG CAMERA\n\n` +
       `SecureContext (HTTPS): ${window.isSecureContext}\n` +
-      `UserAgent: ${navigator.userAgent}\n\n` +
-      `Premi "Avvia" e se fallisce vedrai l'errore preciso.\n` +
-      `TIP: se sei in Instagram/FB/WhatsApp, apri in Safari/Chrome.\n`
+      `URL: ${location.href}\n\n` +
+      `Premi "Avvia". Se fallisce vedrai un alert con il nome errore.\n` +
+      `Tip: se sei in Instagram/FB/WhatsApp, apri in Safari/Chrome.\n`
     );
   };
 
@@ -144,7 +130,6 @@
   startCameraBtn.onclick = async () => {
     showBox("Richiesta permesso camera…");
 
-    // 1) Secure context check
     if (!window.isSecureContext) {
       showBox(
         "❌ BLOCCO SICUREZZA: pagina NON in HTTPS (secure context = false)\n\n" +
@@ -153,21 +138,15 @@
       return;
     }
 
-    // 2) Basic feature check
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       showBox("❌ getUserMedia non disponibile in questo browser/webview.\nApri in Safari/Chrome vero.");
       return;
     }
 
-    // 3) Show camera count (best-effort)
-    const info = await deviceInfo();
-    showBox(`DEBUG PRE-CHECK\n\n${info}\n\nSto avviando la camera…`);
-
     try {
       stopCamera();
 
-      // Try strict first
-      const constraints1 = {
+      const constraints = {
         audio: false,
         video: {
           facingMode: "user",
@@ -176,14 +155,7 @@
         }
       };
 
-      try {
-        stream = await navigator.mediaDevices.getUserMedia(constraints1);
-      } catch (e1) {
-        // Fallback: minimal constraints
-        const constraints2 = { audio:false, video:true };
-        stream = await navigator.mediaDevices.getUserMedia(constraints2);
-      }
-
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
       video.srcObject = stream;
 
       // iOS: force play
@@ -191,20 +163,22 @@
 
       indicator.classList.add("ok");
       indicatorText.textContent = "Camera attiva";
-      showBox("✅ Camera avviata correttamente.\n\nOra puoi procedere con scatto/analisi nella tua versione completa.");
-    } catch (e) {
-      const info2 = await deviceInfo();
+      showBox("✅ Camera avviata correttamente.\n\nSe ancora non vedi il video, prova ad aprire in Safari/Chrome e controlla i permessi del sito.");
+    } catch (err) {
+      console.error(err);
+
+      // ✅ MODIFICA RICHIESTA: alert con errore reale
+      alert("ERRORE CAMERA: " + (err?.name || "unknown") + " | " + (err?.message || ""));
 
       showBox(
-        `❌ ERRORE CAMERA\n\n` +
-        `name: ${e?.name || "?"}\n` +
-        `message: ${e?.message || e}\n\n` +
-        `SecureContext (HTTPS): ${window.isSecureContext}\n` +
-        `${info2}\n\n` +
-        `Soluzioni rapide:\n` +
-        `1) sblocca Fotocamera nelle impostazioni del sito (lucchetto → Camera → Consenti)\n` +
-        `2) apri in Safari/Chrome (non browser in-app)\n` +
-        `3) chiudi altre app che usano la camera\n`
+        "❌ ERRORE CAMERA\n\n" +
+        "name: " + (err?.name || "unknown") + "\n" +
+        "message: " + (err?.message || "") + "\n\n" +
+        "Soluzioni:\n" +
+        "1) Lucchetto → Impostazioni sito → Fotocamera → Consenti\n" +
+        "2) Apri in Safari/Chrome (non browser in-app)\n" +
+        "3) Assicurati che sia HTTPS\n" +
+        "4) Chiudi altre app che usano la camera\n"
       );
     }
   };
