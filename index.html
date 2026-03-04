@@ -141,7 +141,6 @@
     .dot{width:10px;height:10px;border-radius:999px;background:rgba(255,120,120,0.95);box-shadow:0 0 14px rgba(255,120,120,0.45);}
     .centerIndicator.ok .dot{background:rgba(120,255,160,0.95);box-shadow:0 0 14px rgba(120,255,160,0.45);}
 
-    /* (facoltativo) sheet, ma non la UX principale */
     .sheet{
       position:absolute;left:12px;right:12px;
       bottom:calc(150px + env(safe-area-inset-bottom));
@@ -188,7 +187,7 @@
     }
     .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
 
-    /* MODAL RISULTATO (NUOVO) */
+    /* MODAL RISULTATO */
     .resultModal{
       position:fixed;inset:0;z-index:999999;
       background:rgba(0,0,0,0.68);
@@ -345,10 +344,7 @@
     </div>
   </div>
 
-  <!-- POPUP: Apri chat e incolla (resta, ma ora useremo anche il modal risultato) -->
-  <div class="popup" id="popup" style="display:none"></div>
-
-  <!-- MODAL RISULTATO (NUOVO) -->
+  <!-- MODAL RISULTATO -->
   <div class="resultModal" id="resultModal">
     <div class="resultCard">
       <div class="resultHeader">
@@ -384,22 +380,18 @@
       if (loading) loading.style.display = 'none';
     });
 
-    function requestFs() {
-      const el = document.documentElement;
-      const fs = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-      if (fs) { try { fs.call(el); } catch(e) {} }
-      window.removeEventListener('touchstart', requestFs);
-      window.removeEventListener('click', requestFs);
-    }
-    window.addEventListener('touchstart', requestFs, { once: true, passive: true });
-    window.addEventListener('click', requestFs, { once: true });
-
-    let lastTouchEnd = 0;
-    document.addEventListener('touchend', (event) => {
-      const now = Date.now();
-      if (now - lastTouchEnd <= 300) event.preventDefault();
-      lastTouchEnd = now;
-    }, { passive: false });
+    // ✅ FIX ANTI-RESET:
+    // - Disattivo fullscreen automatico: può resettare la sessione dell’iframe D-ID su iOS/Android
+    // - Disattivo anche il blocco "double tap preventDefault": può interferire con i click interni dell’iframe
+    //
+    // (Se vuoi fullscreen, meglio farlo con un bottone dedicato esterno, non al primo tap)
+    //
+    // function requestFs() { ... }
+    // window.addEventListener('touchstart', requestFs, { once: true, passive: true });
+    // window.addEventListener('click', requestFs, { once: true });
+    //
+    // let lastTouchEnd = 0;
+    // document.addEventListener('touchend', (event) => { ... }, { passive: false });
 
     /* ====== Camera + Analysis ====== */
     const camOverlay = document.getElementById('camOverlay');
@@ -441,9 +433,7 @@
     let lastFace = null;
     let faceOk = false;
 
-    // testo pronto da incollare in chat
     let lastChatText = "";
-    // payload ultimo (per riassunto)
     let lastPayload = null;
 
     function showToast(msg){
@@ -685,7 +675,6 @@
     }
 
     function openResultModal(){
-      // Pills
       pillRow.innerHTML = "";
       const score = (lastPayload && typeof lastPayload.beauty_score !== "undefined") ? `${lastPayload.beauty_score}/100` : "—";
       const type = lastPayload?.summary?.skin_type || "—";
@@ -702,7 +691,6 @@
 
       resultSummaryBox.textContent = lastPayload ? buildSummaryText(lastPayload) : "—";
       resultChatBox.textContent = lastChatText || "—";
-
       resultModal.style.display = "flex";
     }
 
@@ -732,11 +720,9 @@
 
         lastChatText = buildChatTextFromAnalysisPayload(payload);
 
-        // abilita bottoni
         copyBtn.disabled = false;
         openChatPasteBtn.disabled = false;
 
-        // mostra RISULTATO vero
         openResultModal();
         showToast("Analisi completata ✅");
 
@@ -756,13 +742,12 @@
         showToast("Incolla un report ✍️");
         return;
       }
-      lastPayload = null; // non abbiamo JSON strutturato, solo testo incollato
+      lastPayload = null;
       lastChatText = buildPastedPrompt(txt);
 
       copyBtn.disabled = false;
       openChatPasteBtn.disabled = false;
 
-      // Mostra modal con “testo chat” (summary vuota)
       pillRow.innerHTML = "";
       const el = document.createElement("div");
       el.className = "pill";
@@ -792,7 +777,6 @@
 
     openChatPasteBtn.onclick = () => {
       if(!lastChatText){ showToast("Nessun testo pronto"); return; }
-      // apre direttamente il modal risultato (già con testo selezionabile/copiabile)
       openResultModal();
     };
 
@@ -808,18 +792,24 @@
       }
     };
 
-    // 💬 Apri Chat Avatar: copia + chiude overlay/modal + focus iframe
+    // ✅ FIX ANTI-RESET:
+    // - NON facciamo agentFrame.focus()
+    // - chiudiamo overlay con un piccolo delay
     resultOpenAvatarBtn.onclick = async () => {
       try{
         await navigator.clipboard.writeText(lastChatText || "");
       }catch(e){}
+
       resultModal.style.display = "none";
-      camOverlay.style.display = "none";
-      try { agentFrame.focus(); } catch(e) {}
+
+      // Delay per evitare “reload/reset” dell’iframe su molti telefoni
+      setTimeout(() => {
+        camOverlay.style.display = "none";
+      }, 350);
+
       showToast("Testo copiato ✅ Apri la chat dell’avatar e incolla 💬");
     };
 
-    // chiudi modal cliccando fuori
     resultModal.addEventListener("click", (e) => {
       if(e.target === resultModal) resultModal.style.display = "none";
     });
