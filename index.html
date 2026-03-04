@@ -83,7 +83,7 @@
   .dot{width:10px;height:10px;border-radius:999px;background:rgba(255,120,120,0.95);box-shadow:0 0 14px rgba(255,120,120,0.45);}
   .centerIndicator.ok .dot{background:rgba(120,255,160,0.95);box-shadow:0 0 14px rgba(120,255,160,0.45);}
 
-  /* Report sheet */
+  /* Report output */
   .sheet{
     position:absolute;left:12px;right:12px;
     bottom:calc(150px + env(safe-area-inset-bottom));
@@ -132,9 +132,46 @@
   }
   .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
 
+  /* Popup "Apri chat e incolla" */
+  .popup{
+    position:fixed;inset:0;z-index:999999;
+    background:rgba(0,0,0,0.65);
+    display:none;
+    align-items:center;justify-content:center;
+    padding:14px;
+  }
+  .popupCard{
+    width:min(720px, 100%);
+    max-height:80dvh;
+    overflow:hidden;
+    border-radius:18px;
+    border:1px solid rgba(255,255,255,0.14);
+    background:rgba(0,0,0,0.68);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.55);
+  }
+  .popupHeader{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 12px;
+    border-bottom:1px solid rgba(255,255,255,0.12);
+    font-weight:800;
+  }
+  .popupBody{padding:12px;}
+  .popupBody textarea{
+    min-height:220px;
+    max-height:52dvh;
+    width:100%;
+    font-size:12px;
+  }
+  .popupFooter{
+    display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;
+    padding:12px;border-top:1px solid rgba(255,255,255,0.12);
+  }
+
   .toast{
     position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
-    z-index:999999;background:rgba(0,0,0,0.74);
+    z-index:9999999;background:rgba(0,0,0,0.74);
     border:1px solid rgba(255,255,255,0.14);
     padding:10px 12px;border-radius:999px;font-size:13px;display:none;
     backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
@@ -162,6 +199,7 @@
   <button class="btn primary" id="openCamBtn">📷 Selfie PRO</button>
   <button class="btn" id="copyBtn" disabled>📋 Copia Report</button>
   <button class="btn" id="sendBtn" disabled>👩‍🎤 Invia all’Avatar</button>
+  <button class="btn" id="openChatPasteBtn" disabled>📨 Apri chat e incolla</button>
 </div>
 
 <!-- Camera Overlay -->
@@ -195,9 +233,12 @@
 
   <!-- Paste report -->
   <div class="pasteBox">
-    <div class="pasteHint">      
+    <div class="pasteHint">
+      💡 <b>Non vedo direttamente la foto</b>, ma posso leggere il report dell’analisi.<br>
+      Incollalo qui e ti preparo la routine, oppure usa Scatta → Analizza.
     </div>
-    <textarea id="reportInput" placeholder="Incolla qui il report / testo dell’analisi…"></textarea>
+
+    <textarea id="reportInput" placeholder="Incolla qui il report JSON / testo dell’analisi…"></textarea>
 
     <div class="row">
       <button class="btn" id="usePastedBtn">🧠 Genera routine</button>
@@ -211,6 +252,27 @@
       <button class="btn" id="startBtn">Avvia Camera</button>
       <button class="btn" id="snapBtn" disabled>Scatta</button>
       <button class="btn primary" id="analyzeBtn" disabled>🤖 Analizza</button>
+    </div>
+  </div>
+</div>
+
+<!-- Popup overlay -->
+<div class="popup" id="popup">
+  <div class="popupCard">
+    <div class="popupHeader">
+      <span>📨 Apri chat e incolla</span>
+      <button class="btn danger" id="popupCloseBtn">Chiudi</button>
+    </div>
+    <div class="popupBody">
+      <div style="font-size:12px;opacity:.9;margin-bottom:8px;">
+        1) Tocca <b>Copia</b>  2) Apri la chat dell’avatar  3) Incolla.
+      </div>
+      <textarea id="popupText" readonly></textarea>
+    </div>
+    <div class="popupFooter">
+      <button class="btn" id="popupCopyBtn">📋 Copia</button>
+      <button class="btn" id="popupSelectBtn">✅ Seleziona</button>
+      <button class="btn primary" id="openAvatarBtn">💬 Apri Chat Avatar</button>
     </div>
   </div>
 </div>
@@ -230,6 +292,7 @@
 
   const copyBtn = document.getElementById('copyBtn');
   const sendBtn = document.getElementById('sendBtn');
+  const openChatPasteBtn = document.getElementById('openChatPasteBtn');
 
   const video = document.getElementById('video');
   const canvas = document.getElementById('canvas');
@@ -244,6 +307,14 @@
   const reportInput = document.getElementById('reportInput');
   const usePastedBtn = document.getElementById('usePastedBtn');
   const clearPastedBtn = document.getElementById('clearPastedBtn');
+
+  // Popup refs
+  const popup = document.getElementById('popup');
+  const popupCloseBtn = document.getElementById('popupCloseBtn');
+  const popupCopyBtn = document.getElementById('popupCopyBtn');
+  const popupSelectBtn = document.getElementById('popupSelectBtn');
+  const popupText = document.getElementById('popupText');
+  const openAvatarBtn = document.getElementById('openAvatarBtn');
 
   let stream = null;
   let detector = null;
@@ -453,30 +524,12 @@
     return out.toDataURL('image/jpeg', 0.78);
   }
 
-  function buildReportTextFromPayload(payload){
-    const s = payload?.summary || {};
-    const r = payload?.routine || {};
-    const m = payload?.makeup || {};
-    const h = payload?.hair || {};
-    return [
-      "ANALISI SELFIE (Beauty Mentor):",
-      `- Beauty Score: ${payload?.beauty_score ?? "--"}/100`,
-      `- Tipo pelle: ${s.skin_type ?? "--"}`,
-      `- Concerns: ${(s.concerns || []).join(", ") || "--"}`,
-      s.notes ? `- Note: ${s.notes}` : "",
-      "",
-      "ROUTINE:",
-      `Mattina: ${(r.morning || []).join(" → ") || "--"}`,
-      `Sera: ${(r.night || []).join(" → ") || "--"}`,
-      "",
-      "MAKEUP:",
-      `- ${(m.tips || []).join(" | ") || "--"}`,
-      "",
-      "CAPELLI/CUTE:",
-      `- ${(h.tips || []).join(" | ") || "--"}`,
-      "",
-      "Istruzioni: Rispondi in modo elegante e professionale, senza consigli medici."
-    ].filter(Boolean).join("\n");
+  function buildPastedPrompt(txt){
+    return (
+      "REPORT INCOLLATO (Beauty Mentor):\n\n" +
+      txt +
+      "\n\nRichiesta: leggi questo report e prepara una routine skincare + capelli + makeup (stile elegante, professionale, niente consigli medici)."
+    );
   }
 
   analyzeBtn.onclick = async () => {
@@ -502,13 +555,17 @@
       }
 
       const payload = await resp.json();
-      lastReportPayload = payload;
-      lastReportText = buildReportTextFromPayload(payload);
 
-      sheet.textContent = lastReportText;
+      lastReportPayload = payload;
+      lastReportText = JSON.stringify(payload, null, 2);
+
+      sheet.textContent =
+        "✅ Analisi completata.\n\n" +
+        "Ora puoi:\n• Copiare il testo\n• Aprire popup “Chat & incolla”\n• (opzionale) Inviare all’avatar\n";
 
       copyBtn.disabled = false;
       sendBtn.disabled = false;
+      openChatPasteBtn.disabled = false;
 
       showToast("Analisi completata ✅");
     }catch(err){
@@ -521,30 +578,24 @@
     }
   };
 
-  // ✅ NEW: usa report incollato
+  // usa report incollato
   usePastedBtn.onclick = () => {
     const txt = (reportInput.value || "").trim();
     if(!txt){
       showToast("Incolla un report prima ✍️");
       return;
     }
-
-    // Creiamo un testo elegante pronto per l’avatar
-    lastReportText =
-      "REPORT INCOLLATO (Beauty Mentor):\n\n" +
-      txt +
-      "\n\nRichiesta: leggi questo report e prepara una routine skincare + capelli + makeup (stile elegante, professionale, niente consigli medici).";
-
+    lastReportText = buildPastedPrompt(txt);
     lastReportPayload = { pasted_report: txt };
 
     sheet.style.display = 'block';
     sheet.textContent =
       "✅ Report incollato pronto.\n\n" +
-      "Ora puoi premere “Copia Report” o “Invia all’Avatar”.\n\n" +
-      "Suggerimento: se vuoi una routine più precisa, usa anche Scatta → Analizza.";
+      "Ora puoi premere:\n• “📋 Copia Report”\n• “📨 Apri chat e incolla”\n";
 
     copyBtn.disabled = false;
     sendBtn.disabled = false;
+    openChatPasteBtn.disabled = false;
 
     showToast("Report pronto ✅");
   };
@@ -573,16 +624,75 @@
       }, "*");
       showToast("Inviato all’avatar (se supportato) 👩‍🎤");
     }catch{
-      showToast("Invio diretto non supportato. Usa Copia Report.");
+      showToast("Invio diretto non supportato. Usa Copia/Popup.");
     }
   };
 
+  // ✅ popup chat & incolla
+  function openPopupWithText(){
+    if(!lastReportText){
+      showToast("Nessun testo pronto");
+      return;
+    }
+    popup.style.display = "flex";
+    popupText.value = lastReportText;
+
+    setTimeout(() => {
+      popupText.focus();
+      popupText.setSelectionRange(0, popupText.value.length);
+    }, 50);
+  }
+
+  openChatPasteBtn.onclick = openPopupWithText;
+
+  popupCloseBtn.onclick = () => {
+    popup.style.display = "none";
+  };
+
+  popupSelectBtn.onclick = () => {
+    popupText.focus();
+    popupText.setSelectionRange(0, popupText.value.length);
+    showToast("Selezionato ✅");
+  };
+
+  popupCopyBtn.onclick = async () => {
+    try{
+      await navigator.clipboard.writeText(popupText.value || "");
+      showToast("Copiato 📋");
+    }catch{
+      popupText.focus();
+      popupText.setSelectionRange(0, popupText.value.length);
+      showToast("Copia non riuscita: copia manuale");
+    }
+  };
+
+  // ✅ NEW: Apri Chat Avatar (copia + chiude overlay)
+  openAvatarBtn.onclick = async () => {
+    try{
+      await navigator.clipboard.writeText(popupText.value || "");
+    }catch(e){
+      // fallback: lascia selezionato
+      popupText.focus();
+      popupText.setSelectionRange(0, popupText.value.length);
+    }
+
+    popup.style.display = "none";
+    camOverlay.style.display = "none";
+
+    showToast("Testo copiato. Incollalo nella chat dell’avatar 💬");
+  };
+
+  // chiudi popup cliccando fuori
+  popup.addEventListener("click", (e) => {
+    if(e.target === popup) popup.style.display = "none";
+  });
+
   document.addEventListener("visibilitychange", () => {
-    if(document.hidden) stopCamera();
+    if(document.hidden){
+      stopCamera();
+    }
   });
 </script>
 
 </body>
 </html>
-
-
