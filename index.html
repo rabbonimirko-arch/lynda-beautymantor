@@ -1,683 +1,789 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="it">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<title>Beauty Mentor • Avatar + Selfie PRO</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Beauty Mentor • D-ID Agent + Selfie PRO</title>
 
-<style>
-  *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
-  html,body{width:100%;height:100%;background:#000;color:#fff;overflow:hidden;position:fixed;touch-action:manipulation;overscroll-behavior:none;}
+  <style>
+    /* Reset */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  /* AVATAR (cover 16:9, fullscreen) */
-  .stage{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;background:#000;overflow:hidden;z-index:1;}
-  #avatarFrame{
-    position:absolute;top:50%;left:50%;
-    width:177.78vh;height:100vh;height:100dvh;min-width:100vw;min-height:56.25vw;
-    transform:translate(-50%,-50%);border:none;background:#000;
-  }
-  @media (min-aspect-ratio: 16/9){
-    #avatarFrame{width:100vw;height:56.25vw;min-width:auto;min-height:auto;}
-  }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      overflow: hidden;
+      -webkit-text-size-adjust: 100%;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      position: fixed;
+      touch-action: manipulation;
+      overscroll-behavior: none;
+      color:#fff;
+    }
 
-  /* TOP BUTTONS */
-  .topUI{position:fixed;top:12px;left:12px;z-index:9999;display:flex;gap:10px;flex-wrap:wrap;max-width:calc(100vw - 24px);}
-  .btn{
-    border:none;padding:10px 12px;border-radius:14px;
-    background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.14);
-    color:#fff;font-size:14px;cursor:pointer;
-    backdrop-filter: blur(10px);-webkit-backdrop-filter: blur(10px);
-  }
-  .btn.primary{ background:rgba(255,79,160,0.75); border-color:rgba(255,79,160,0.95); }
-  .btn.danger{ background:rgba(255,60,60,0.55); border-color:rgba(255,60,60,0.80); }
-  .btn:disabled{opacity:0.55;cursor:not-allowed;}
+    /* Safe-area iPhone */
+    body {
+      padding: env(safe-area-inset-top) env(safe-area-inset-right)
+               env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
 
-  /* CAMERA OVERLAY FULLSCREEN 9:16 */
-  .camOverlay{position:fixed;inset:0;z-index:99999;background:#000;display:none;}
-  .camHeader{
-    position:absolute;top:0;left:0;right:0;z-index:5;
-    display:flex;justify-content:space-between;align-items:center;
-    padding:12px;padding-top:calc(12px + env(safe-area-inset-top));
-    background:linear-gradient(to bottom, rgba(0,0,0,0.78), rgba(0,0,0,0.25));
-    border-bottom:1px solid rgba(255,255,255,0.12);
-    backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
-    font-weight:800;
-  }
+    /* Contenitore 9:16 "letterbox" */
+    .stage {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #000;
+      position: relative;
+    }
 
-  .viewport{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
-  .videoWrap{
-    position:relative;
-    width:min(100vw, calc(100dvh * 9 / 16));
-    height:min(100dvh, calc(100vw * 16 / 9));
-    aspect-ratio:9/16;
-    overflow:hidden;background:#000;border-radius:18px;border:1px solid rgba(255,255,255,0.12);
-  }
-  @media (max-aspect-ratio: 9/16){
-    .videoWrap{width:100vw;height:100dvh;border-radius:0;border:none;}
-  }
-  video,canvas{width:100%;height:100%;object-fit:cover;display:block}
+    .frame {
+      width: min(100vw, calc(100vh * 9 / 16));
+      height: min(100vh, calc(100vw * 16 / 9));
+      background: #000;
+      border: 0;
+      border-radius: 0;
+      overflow: hidden;
+      position: relative;
+    }
 
-  .faceFrame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
-  .frameShape{width:72%;height:78%;border:2px solid rgba(255,255,255,0.55);border-radius:46px;box-shadow: 0 0 0 9999px rgba(0,0,0,0.18);}
-  .hintText{position:absolute;bottom:96px;left:12px;right:12px;text-align:center;font-size:12px;opacity:0.92;}
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #000;
+      display: block;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-  .faceBox{
-    position:absolute;border:2px solid rgba(255,79,160,0.95);
-    border-radius:14px;display:none;pointer-events:none;
-    box-shadow:0 0 18px rgba(255,79,160,0.35);
-  }
+    .loading {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: rgba(255,255,255,.85);
+      font-size: 14px;
+      letter-spacing: .2px;
+      user-select: none;
+      pointer-events: none;
+      background: radial-gradient(circle at center, rgba(255,255,255,.06), rgba(0,0,0,.85));
+      z-index: 2;
+    }
 
-  /* Center indicator */
-  .centerIndicator{
-    position:absolute;top:calc(64px + env(safe-area-inset-top));
-    left:50%;transform:translateX(-50%);z-index:6;
-    display:inline-flex;align-items:center;gap:8px;
-    padding:8px 12px;border-radius:999px;
-    background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.14);
-    backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
-    font-size:13px;font-weight:700;
-  }
-  .dot{width:10px;height:10px;border-radius:999px;background:rgba(255,120,120,0.95);box-shadow:0 0 14px rgba(255,120,120,0.45);}
-  .centerIndicator.ok .dot{background:rgba(120,255,160,0.95);box-shadow:0 0 14px rgba(120,255,160,0.45);}
+    /* TOP BUTTONS (overlay sopra iframe) */
+    .topUI{
+      position:fixed;
+      top:12px;
+      left:12px;
+      z-index:9999;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      max-width:calc(100vw - 24px);
+    }
+    .btn{
+      border:none;
+      padding:10px 12px;
+      border-radius:14px;
+      background:rgba(255,255,255,0.12);
+      border:1px solid rgba(255,255,255,0.14);
+      color:#fff;
+      font-size:14px;
+      cursor:pointer;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .btn.primary{ background:rgba(255,79,160,0.75); border-color:rgba(255,79,160,0.95); }
+    .btn.danger{ background:rgba(255,60,60,0.55); border-color:rgba(255,60,60,0.80); }
+    .btn:disabled{opacity:0.55;cursor:not-allowed;}
 
-  /* Report output */
-  .sheet{
-    position:absolute;left:12px;right:12px;
-    bottom:calc(150px + env(safe-area-inset-bottom));
-    z-index:7;max-height:32dvh;overflow:auto;
-    padding:10px;border-radius:16px;border:1px solid rgba(255,255,255,0.12);
-    background:rgba(0,0,0,0.50);
-    backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
-    display:none;white-space:pre-wrap;font-size:12px;line-height:1.35;
-  }
+    /* CAMERA OVERLAY FULLSCREEN 9:16 */
+    .camOverlay{position:fixed;inset:0;z-index:99999;background:#000;display:none;}
+    .camHeader{
+      position:absolute;top:0;left:0;right:0;z-index:5;
+      display:flex;justify-content:space-between;align-items:center;
+      padding:12px;padding-top:calc(12px + env(safe-area-inset-top));
+      background:linear-gradient(to bottom, rgba(0,0,0,0.78), rgba(0,0,0,0.25));
+      border-bottom:1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
+      font-weight:800;
+    }
 
-  /* Paste area */
-  .pasteBox{
-    position:absolute;left:12px;right:12px;
-    bottom:calc(92px + env(safe-area-inset-bottom));
-    z-index:8;
-    display:flex;flex-direction:column;gap:8px;
-  }
-  .pasteHint{
-    font-size:12px;opacity:0.92;
-    background:rgba(0,0,0,0.45);
-    border:1px solid rgba(255,255,255,0.12);
-    border-radius:14px;padding:10px;
-    backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
-  }
-  textarea{
-    width:100%;
-    min-height:90px;
-    max-height:180px;
-    resize:none;
-    padding:10px 12px;
-    border-radius:14px;
-    border:1px solid rgba(255,255,255,0.14);
-    background:rgba(255,255,255,0.08);
-    color:#fff;
-    font-size:12px;
-    outline:none;
-  }
+    .viewport{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+    .videoWrap{
+      position:relative;
+      width:min(100vw, calc(100dvh * 9 / 16));
+      height:min(100dvh, calc(100vw * 16 / 9));
+      aspect-ratio:9/16;
+      overflow:hidden;background:#000;border-radius:18px;border:1px solid rgba(255,255,255,0.12);
+    }
+    @media (max-aspect-ratio: 9/16){
+      .videoWrap{width:100vw;height:100dvh;border-radius:0;border:none;}
+    }
+    video,canvas{width:100%;height:100%;object-fit:cover;display:block}
 
-  /* Bottom controls */
-  .camControls{
-    position:absolute;left:0;right:0;bottom:0;z-index:9;
-    padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom));
-    background:linear-gradient(to top, rgba(0,0,0,0.82), rgba(0,0,0,0.22));
-    border-top:1px solid rgba(255,255,255,0.10);
-    backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
-  }
-  .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+    .faceFrame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+    .frameShape{width:72%;height:78%;border:2px solid rgba(255,255,255,0.55);border-radius:46px;box-shadow: 0 0 0 9999px rgba(0,0,0,0.18);}
+    .hintText{position:absolute;bottom:96px;left:12px;right:12px;text-align:center;font-size:12px;opacity:0.92;}
 
-  /* Popup "Apri chat e incolla" */
-  .popup{
-    position:fixed;inset:0;z-index:999999;
-    background:rgba(0,0,0,0.65);
-    display:none;
-    align-items:center;justify-content:center;
-    padding:14px;
-  }
-  .popupCard{
-    width:min(720px, 100%);
-    max-height:80dvh;
-    overflow:hidden;
-    border-radius:18px;
-    border:1px solid rgba(255,255,255,0.14);
-    background:rgba(0,0,0,0.68);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.55);
-  }
-  .popupHeader{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:12px 12px;
-    border-bottom:1px solid rgba(255,255,255,0.12);
-    font-weight:800;
-  }
-  .popupBody{padding:12px;}
-  .popupBody textarea{
-    min-height:220px;
-    max-height:52dvh;
-    width:100%;
-    font-size:12px;
-  }
-  .popupFooter{
-    display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;
-    padding:12px;border-top:1px solid rgba(255,255,255,0.12);
-  }
+    .faceBox{
+      position:absolute;border:2px solid rgba(255,79,160,0.95);
+      border-radius:14px;display:none;pointer-events:none;
+      box-shadow:0 0 18px rgba(255,79,160,0.35);
+    }
 
-  .toast{
-    position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
-    z-index:9999999;background:rgba(0,0,0,0.74);
-    border:1px solid rgba(255,255,255,0.14);
-    padding:10px 12px;border-radius:999px;font-size:13px;display:none;
-    backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
-  }
-</style>
+    .centerIndicator{
+      position:absolute;top:calc(64px + env(safe-area-inset-top));
+      left:50%;transform:translateX(-50%);z-index:6;
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 12px;border-radius:999px;
+      background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.14);
+      backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
+      font-size:13px;font-weight:700;
+    }
+    .dot{width:10px;height:10px;border-radius:999px;background:rgba(255,120,120,0.95);box-shadow:0 0 14px rgba(255,120,120,0.45);}
+    .centerIndicator.ok .dot{background:rgba(120,255,160,0.95);box-shadow:0 0 14px rgba(120,255,160,0.45);}
 
-<!-- MediaPipe Face Detection (stabile) -->
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4/face_detection.js"></script>
+    .sheet{
+      position:absolute;left:12px;right:12px;
+      bottom:calc(150px + env(safe-area-inset-bottom));
+      z-index:7;max-height:32dvh;overflow:auto;
+      padding:10px;border-radius:16px;border:1px solid rgba(255,255,255,0.12);
+      background:rgba(0,0,0,0.50);
+      backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
+      display:none;white-space:pre-wrap;font-size:12px;line-height:1.35;
+    }
 
+    .pasteBox{
+      position:absolute;left:12px;right:12px;
+      bottom:calc(92px + env(safe-area-inset-bottom));
+      z-index:8;
+      display:flex;flex-direction:column;gap:8px;
+    }
+    .pasteHint{
+      font-size:12px;opacity:0.92;
+      background:rgba(0,0,0,0.45);
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:14px;padding:10px;
+      backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
+    }
+    textarea{
+      width:100%;
+      min-height:90px;
+      max-height:180px;
+      resize:none;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.14);
+      background:rgba(255,255,255,0.08);
+      color:#fff;
+      font-size:12px;
+      outline:none;
+    }
+
+    .camControls{
+      position:absolute;left:0;right:0;bottom:0;z-index:9;
+      padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom));
+      background:linear-gradient(to top, rgba(0,0,0,0.82), rgba(0,0,0,0.22));
+      border-top:1px solid rgba(255,255,255,0.10);
+      backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
+    }
+    .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+
+    /* Popup "Apri chat e incolla" */
+    .popup{
+      position:fixed;inset:0;z-index:999999;
+      background:rgba(0,0,0,0.65);
+      display:none;
+      align-items:center;justify-content:center;
+      padding:14px;
+    }
+    .popupCard{
+      width:min(720px, 100%);
+      max-height:80dvh;
+      overflow:hidden;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,0.14);
+      background:rgba(0,0,0,0.68);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.55);
+    }
+    .popupHeader{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:12px 12px;
+      border-bottom:1px solid rgba(255,255,255,0.12);
+      font-weight:800;
+    }
+    .popupBody{padding:12px;}
+    .popupBody textarea{
+      min-height:220px;
+      max-height:52dvh;
+      width:100%;
+      font-size:12px;
+    }
+    .popupFooter{
+      display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;
+      padding:12px;border-top:1px solid rgba(255,255,255,0.12);
+    }
+
+    .toast{
+      position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
+      z-index:9999999;background:rgba(0,0,0,0.74);
+      border:1px solid rgba(255,255,255,0.14);
+      padding:10px 12px;border-radius:999px;font-size:13px;display:none;
+      backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
+    }
+
+    ::-webkit-scrollbar { width: 0; height: 0; }
+  </style>
+
+  <!-- MediaPipe Face Detection (stabile) -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4/face_detection.js"></script>
 </head>
+
 <body>
 
-<!-- Avatar -->
-<div class="stage">
-  <iframe
-    id="avatarFrame"
-    src="https://embed.liveavatar.com/v1/8d2b6987-3ad8-49bc-860f-e6f00c939b8e?background=000000"
-    allow="microphone; autoplay; fullscreen"
-    title="LiveAvatar">
-  </iframe>
-</div>
-
-<!-- Top UI -->
-<div class="topUI">
-  <button class="btn primary" id="openCamBtn">📷 Selfie PRO</button>
-  <button class="btn" id="copyBtn" disabled>📋 Copia Report</button>
-  <button class="btn" id="sendBtn" disabled>👩‍🎤 Invia all’Avatar</button>
-  <button class="btn" id="openChatPasteBtn" disabled>📨 Apri chat e incolla</button>
-</div>
-
-<!-- Camera Overlay -->
-<div class="camOverlay" id="camOverlay">
-  <div class="camHeader">
-    <span>Beauty Mentor • Camera 9:16</span>
-    <button class="btn danger" id="closeCamBtn">Chiudi</button>
+  <!-- Top UI -->
+  <div class="topUI">
+    <button class="btn primary" id="openCamBtn">📷 Selfie PRO</button>
+    <button class="btn" id="copyBtn" disabled>📋 Copia testo</button>
+    <button class="btn" id="openChatPasteBtn" disabled>📨 Apri chat e incolla</button>
   </div>
 
-  <div class="centerIndicator" id="centerIndicator">
-    <span class="dot"></span>
-    <span id="centerText">Centra il volto</span>
+  <!-- D-ID Agent (index1) -->
+  <div class="stage">
+    <div class="frame">
+      <div class="loading" id="loading">Caricamento…</div>
+
+      <iframe
+        id="agentFrame"
+        title="D-ID Agent"
+        allow="camera; microphone; autoplay; clipboard-read; clipboard-write; fullscreen"
+        referrerpolicy="no-referrer"
+        src="https://studio.d-id.com/agents/share?id=v2_agt_M3_Z_gpk&utm_source=copy&key=WjI5dloyeGxMVzloZFhSb01ud3hNVGd5TXpZME9EUTNNVFl4T0RBMk5ETTBNams2U2tOSmVteHlOMkZzWW1oRlIxUTNXbXhPTVZSeQ=="
+      ></iframe>
+    </div>
   </div>
 
-  <div class="viewport">
-    <div class="videoWrap">
-      <video id="video" autoplay muted playsinline webkit-playsinline></video>
-      <canvas id="canvas" style="display:none;"></canvas>
+  <!-- Camera Overlay -->
+  <div class="camOverlay" id="camOverlay">
+    <div class="camHeader">
+      <span>Beauty Mentor • Camera 9:16</span>
+      <button class="btn danger" id="closeCamBtn">Chiudi</button>
+    </div>
 
-      <div class="faceFrame">
-        <div class="frameShape"></div>
-        <div class="hintText">Viso nella cornice • luce naturale • niente mano</div>
+    <div class="centerIndicator" id="centerIndicator">
+      <span class="dot"></span>
+      <span id="centerText">Centra il volto</span>
+    </div>
+
+    <div class="viewport">
+      <div class="videoWrap">
+        <video id="video" autoplay muted playsinline webkit-playsinline></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+
+        <div class="faceFrame">
+          <div class="frameShape"></div>
+          <div class="hintText">Viso nella cornice • luce naturale • niente mano</div>
+        </div>
+
+        <div class="faceBox" id="faceBox"></div>
+      </div>
+    </div>
+
+    <div class="sheet" id="sheet"></div>
+
+    <div class="pasteBox">
+      <div class="pasteHint">
+        💡 <b>Non vedo direttamente la foto</b>, ma posso leggere il report dell’analisi.<br>
+        Incollalo qui e preparo un testo perfetto da incollare nella chat dell’avatar (senza consigli medici).
       </div>
 
-      <div class="faceBox" id="faceBox"></div>
-    </div>
-  </div>
+      <textarea id="reportInput" placeholder="Incolla qui il report JSON / testo dell’analisi…"></textarea>
 
-  <!-- Report output -->
-  <div class="sheet" id="sheet"></div>
-
-  <!-- Paste report -->
-  <div class="pasteBox">
-    <div class="pasteHint">
-      💡 <b>Non vedo direttamente la foto</b>, ma posso leggere il report dell’analisi.<br>
-      Incollalo qui e ti preparo la routine, oppure usa Scatta → Analizza.
-    </div>
-
-    <textarea id="reportInput" placeholder="Incolla qui il report JSON / testo dell’analisi…"></textarea>
-
-    <div class="row">
-      <button class="btn" id="usePastedBtn">🧠 Genera routine</button>
-      <button class="btn" id="clearPastedBtn">🧽 Svuota</button>
-    </div>
-  </div>
-
-  <!-- Camera controls -->
-  <div class="camControls">
-    <div class="row">
-      <button class="btn" id="startBtn">Avvia Camera</button>
-      <button class="btn" id="snapBtn" disabled>Scatta</button>
-      <button class="btn primary" id="analyzeBtn" disabled>🤖 Analizza</button>
-    </div>
-  </div>
-</div>
-
-<!-- Popup overlay -->
-<div class="popup" id="popup">
-  <div class="popupCard">
-    <div class="popupHeader">
-      <span>📨 Apri chat e incolla</span>
-      <button class="btn danger" id="popupCloseBtn">Chiudi</button>
-    </div>
-    <div class="popupBody">
-      <div style="font-size:12px;opacity:.9;margin-bottom:8px;">
-        1) Tocca <b>Copia</b>  2) Apri la chat dell’avatar  3) Incolla.
+      <div class="row">
+        <button class="btn" id="usePastedBtn">🧠 Prepara testo per la chat</button>
+        <button class="btn" id="clearPastedBtn">🧽 Svuota</button>
       </div>
-      <textarea id="popupText" readonly></textarea>
     </div>
-    <div class="popupFooter">
-      <button class="btn" id="popupCopyBtn">📋 Copia</button>
-      <button class="btn primary" id="popupSelectBtn">✅ Seleziona tutto</button>
+
+    <div class="camControls">
+      <div class="row">
+        <button class="btn" id="startBtn">Avvia Camera</button>
+        <button class="btn" id="snapBtn" disabled>Scatta</button>
+        <button class="btn primary" id="analyzeBtn" disabled>🤖 Analizza</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="toast" id="toast"></div>
+  <!-- Popup overlay -->
+  <div class="popup" id="popup">
+    <div class="popupCard">
+      <div class="popupHeader">
+        <span>📨 Apri chat e incolla</span>
+        <button class="btn danger" id="popupCloseBtn">Chiudi</button>
+      </div>
+      <div class="popupBody">
+        <div style="font-size:12px;opacity:.9;margin-bottom:8px;">
+          1) Tocca <b>Copia</b> (o <b>Apri Chat Avatar</b>)  2) Apri la chat dell’avatar  3) Incolla.
+        </div>
+        <textarea id="popupText" readonly></textarea>
+      </div>
+      <div class="popupFooter">
+        <button class="btn" id="popupCopyBtn">📋 Copia</button>
+        <button class="btn" id="popupSelectBtn">✅ Seleziona</button>
+        <button class="btn primary" id="openAvatarBtn">💬 Apri Chat Avatar</button>
+      </div>
+    </div>
+  </div>
 
-<script>
-  const camOverlay = document.getElementById('camOverlay');
-  const toast = document.getElementById('toast');
+  <div class="toast" id="toast"></div>
 
-  const openCamBtn = document.getElementById('openCamBtn');
-  const closeCamBtn = document.getElementById('closeCamBtn');
+  <script>
+    /* ====== index1 behaviors ====== */
+    const agentFrame = document.getElementById('agentFrame');
+    const loading = document.getElementById('loading');
 
-  const startBtn = document.getElementById('startBtn');
-  const snapBtn = document.getElementById('snapBtn');
-  const analyzeBtn = document.getElementById('analyzeBtn');
+    agentFrame.addEventListener('load', () => {
+      if (loading) loading.style.display = 'none';
+    });
 
-  const copyBtn = document.getElementById('copyBtn');
-  const sendBtn = document.getElementById('sendBtn');
-  const openChatPasteBtn = document.getElementById('openChatPasteBtn');
-
-  const video = document.getElementById('video');
-  const canvas = document.getElementById('canvas');
-  const sheet = document.getElementById('sheet');
-
-  const avatarFrame = document.getElementById('avatarFrame');
-  const faceBoxEl = document.getElementById('faceBox');
-
-  const centerIndicator = document.getElementById('centerIndicator');
-  const centerText = document.getElementById('centerText');
-
-  const reportInput = document.getElementById('reportInput');
-  const usePastedBtn = document.getElementById('usePastedBtn');
-  const clearPastedBtn = document.getElementById('clearPastedBtn');
-
-  // Popup refs
-  const popup = document.getElementById('popup');
-  const popupCloseBtn = document.getElementById('popupCloseBtn');
-  const popupCopyBtn = document.getElementById('popupCopyBtn');
-  const popupSelectBtn = document.getElementById('popupSelectBtn');
-  const popupText = document.getElementById('popupText');
-
-  let stream = null;
-  let detector = null;
-  let lastFace = null;
-  let faceOk = false;
-
-  let lastReportText = "";
-  let lastReportPayload = null;
-
-  function showToast(msg){
-    toast.textContent = msg;
-    toast.style.display = 'block';
-    clearTimeout(showToast._t);
-    showToast._t = setTimeout(()=> toast.style.display='none', 2200);
-  }
-
-  function setCenter(ok, txt){
-    centerIndicator.classList.toggle('ok', !!ok);
-    centerText.textContent = txt;
-  }
-
-  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
-
-  openCamBtn.onclick = () => {
-    camOverlay.style.display = 'block';
-    sheet.style.display = 'none';
-    setCenter(false, "Centra il volto");
-  };
-
-  closeCamBtn.onclick = () => {
-    stopCamera();
-    camOverlay.style.display = 'none';
-  };
-
-  function stopCamera(){
-    if(stream){
-      stream.getTracks().forEach(t=>t.stop());
-      stream = null;
+    function requestFs() {
+      const el = document.documentElement;
+      const fs = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+      if (fs) { try { fs.call(el); } catch(e) {} }
+      window.removeEventListener('touchstart', requestFs);
+      window.removeEventListener('click', requestFs);
     }
-    snapBtn.disabled = true;
-    analyzeBtn.disabled = true;
-    lastFace = null;
-    faceOk = false;
-    faceBoxEl.style.display = 'none';
-    setCenter(false, "Centra il volto");
-  }
+    window.addEventListener('touchstart', requestFs, { once: true, passive: true });
+    window.addEventListener('click', requestFs, { once: true });
 
-  function getFaceDetectionCtor(){
-    if (typeof window.FaceDetection === "function") return window.FaceDetection;
-    if (window.FaceDetection && typeof window.FaceDetection.FaceDetection === "function") return window.FaceDetection.FaceDetection;
-    return null;
-  }
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', (event) => {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) event.preventDefault();
+      lastTouchEnd = now;
+    }, { passive: false });
 
-  function initDetector(){
-    if(detector) return detector;
+    /* ====== Camera + Analysis (index2) ====== */
+    const camOverlay = document.getElementById('camOverlay');
+    const toast = document.getElementById('toast');
 
-    const Ctor = getFaceDetectionCtor();
-    if(!Ctor) throw new Error("FaceDetection constructor not found");
+    const openCamBtn = document.getElementById('openCamBtn');
+    const closeCamBtn = document.getElementById('closeCamBtn');
 
-    detector = new Ctor({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4/${file}`
-    });
+    const startBtn = document.getElementById('startBtn');
+    const snapBtn = document.getElementById('snapBtn');
+    const analyzeBtn = document.getElementById('analyzeBtn');
 
-    detector.setOptions({ model:"short", minDetectionConfidence:0.6 });
+    const copyBtn = document.getElementById('copyBtn');
+    const openChatPasteBtn = document.getElementById('openChatPasteBtn');
 
-    detector.onResults((results)=>{
-      const dets = results?.detections || [];
-      if(!dets.length){
-        lastFace = null;
-        faceOk = false;
-        faceBoxEl.style.display = 'none';
-        setCenter(false, "Centra il volto");
-        return;
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const sheet = document.getElementById('sheet');
+
+    const faceBoxEl = document.getElementById('faceBox');
+    const centerIndicator = document.getElementById('centerIndicator');
+    const centerText = document.getElementById('centerText');
+
+    const reportInput = document.getElementById('reportInput');
+    const usePastedBtn = document.getElementById('usePastedBtn');
+    const clearPastedBtn = document.getElementById('clearPastedBtn');
+
+    // Popup
+    const popup = document.getElementById('popup');
+    const popupCloseBtn = document.getElementById('popupCloseBtn');
+    const popupCopyBtn = document.getElementById('popupCopyBtn');
+    const popupSelectBtn = document.getElementById('popupSelectBtn');
+    const popupText = document.getElementById('popupText');
+    const openAvatarBtn = document.getElementById('openAvatarBtn');
+
+    let stream = null;
+    let detector = null;
+    let lastFace = null;
+    let faceOk = false;
+
+    // testo pronto da incollare in chat
+    let lastChatText = "";
+
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(()=> toast.style.display='none', 2200);
+    }
+
+    function setCenter(ok, txt){
+      centerIndicator.classList.toggle('ok', !!ok);
+      centerText.textContent = txt;
+    }
+
+    function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+    openCamBtn.onclick = () => {
+      camOverlay.style.display = 'block';
+      sheet.style.display = 'none';
+      setCenter(false, "Centra il volto");
+    };
+
+    closeCamBtn.onclick = () => {
+      stopCamera();
+      camOverlay.style.display = 'none';
+    };
+
+    function stopCamera(){
+      if(stream){
+        stream.getTracks().forEach(t=>t.stop());
+        stream = null;
       }
-      const bb = dets[0].boundingBox;
-      const xMin = bb.xCenter - bb.width/2;
-      const yMin = bb.yCenter - bb.height/2;
+      snapBtn.disabled = true;
+      analyzeBtn.disabled = true;
+      lastFace = null;
+      faceOk = false;
+      faceBoxEl.style.display = 'none';
+      setCenter(false, "Centra il volto");
+    }
 
-      lastFace = {
-        xMin: clamp(xMin, 0, 1),
-        yMin: clamp(yMin, 0, 1),
-        width: clamp(bb.width, 0, 1),
-        height: clamp(bb.height, 0, 1)
-      };
+    function getFaceDetectionCtor(){
+      if (typeof window.FaceDetection === "function") return window.FaceDetection;
+      if (window.FaceDetection && typeof window.FaceDetection.FaceDetection === "function") return window.FaceDetection.FaceDetection;
+      return null;
+    }
 
-      const area = lastFace.width * lastFace.height;
-      faceOk = area > 0.08;
+    function initDetector(){
+      if(detector) return detector;
 
-      setCenter(faceOk, faceOk ? "Volto centrato" : "Avvicina il volto");
-      drawFaceBoxOverlay();
-    });
+      const Ctor = getFaceDetectionCtor();
+      if(!Ctor) throw new Error("FaceDetection constructor not found");
 
-    return detector;
-  }
-
-  async function detectionLoop(){
-    if(!stream) return;
-    try{ await detector.send({ image: video }); }catch{}
-    requestAnimationFrame(detectionLoop);
-  }
-
-  function drawFaceBoxOverlay(){
-    if(!lastFace){ faceBoxEl.style.display='none'; return; }
-    const wrap = video.parentElement;
-    const w = wrap.clientWidth;
-    const h = wrap.clientHeight;
-
-    faceBoxEl.style.display = 'block';
-    faceBoxEl.style.left = (lastFace.xMin * w) + "px";
-    faceBoxEl.style.top = (lastFace.yMin * h) + "px";
-    faceBoxEl.style.width = (lastFace.width * w) + "px";
-    faceBoxEl.style.height = (lastFace.height * h) + "px";
-  }
-
-  startBtn.onclick = async () => {
-    try{
-      if(!window.isSecureContext){
-        sheet.style.display='block';
-        sheet.textContent = "❌ La camera richiede HTTPS.\nApri questa pagina su Vercel (https://...).";
-        return;
-      }
-
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio:false,
-        video:{ facingMode:"user", width:{ ideal:1280 }, height:{ ideal:720 } }
+      detector = new Ctor({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4/${file}`
       });
 
-      video.srcObject = stream;
-      await video.play().catch(()=>{});
+      detector.setOptions({ model:"short", minDetectionConfidence:0.6 });
 
-      initDetector();
-      snapBtn.disabled = false;
-      analyzeBtn.disabled = true;
+      detector.onResults((results)=>{
+        const dets = results?.detections || [];
+        if(!dets.length){
+          lastFace = null;
+          faceOk = false;
+          faceBoxEl.style.display = 'none';
+          setCenter(false, "Centra il volto");
+          return;
+        }
+        const bb = dets[0].boundingBox;
+        const xMin = bb.xCenter - bb.width/2;
+        const yMin = bb.yCenter - bb.height/2;
 
-      showToast("Camera attiva ✅");
+        lastFace = {
+          xMin: clamp(xMin, 0, 1),
+          yMin: clamp(yMin, 0, 1),
+          width: clamp(bb.width, 0, 1),
+          height: clamp(bb.height, 0, 1)
+        };
+
+        const area = lastFace.width * lastFace.height;
+        faceOk = area > 0.08;
+
+        setCenter(faceOk, faceOk ? "Volto centrato" : "Avvicina il volto");
+        drawFaceBoxOverlay();
+      });
+
+      return detector;
+    }
+
+    async function detectionLoop(){
+      if(!stream) return;
+      try{ await detector.send({ image: video }); }catch{}
       requestAnimationFrame(detectionLoop);
-    }catch(err){
-      console.error(err);
-      alert("ERRORE CAMERA: " + (err?.name || "unknown") + " | " + (err?.message || ""));
-      sheet.style.display='block';
-      sheet.textContent = "❌ ERRORE CAMERA\n" + (err?.message || err);
-    }
-  };
-
-  snapBtn.onclick = () => {
-    if(!stream || !video.videoWidth) return;
-
-    const W=900, H=1600;
-    canvas.width=W; canvas.height=H;
-    const ctx = canvas.getContext('2d');
-
-    const vw = video.videoWidth, vh = video.videoHeight;
-    const targetAR = W/H, videoAR = vw/vh;
-    let sx=0,sy=0,sw=vw,sh=vh;
-    if(videoAR > targetAR){
-      sh = vh; sw = Math.round(vh * targetAR); sx = Math.round((vw - sw)/2);
-    }else{
-      sw = vw; sh = Math.round(vw / targetAR); sy = Math.round((vh - sh)/2);
-    }
-    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, W, H);
-
-    if(!lastFace){
-      sheet.style.display='block';
-      sheet.textContent = "Volto non rilevato. Inquadra il viso nella cornice e riprova.";
-      analyzeBtn.disabled = true;
-      showToast("Volto non rilevato ❌");
-      return;
-    }
-    if(!faceOk){
-      sheet.style.display='block';
-      sheet.textContent = "Volto troppo lontano. Avvicinati un po’ e riprova lo scatto.";
-      analyzeBtn.disabled = true;
-      showToast("Avvicina il volto 📏");
-      return;
     }
 
-    analyzeBtn.disabled = false;
-    sheet.style.display='block';
-    sheet.textContent = "Selfie pronto ✅ Premi “Analizza”.";
-    showToast("Scatto OK 📸");
-  };
+    function drawFaceBoxOverlay(){
+      if(!lastFace){ faceBoxEl.style.display='none'; return; }
+      const wrap = video.parentElement;
+      const w = wrap.clientWidth;
+      const h = wrap.clientHeight;
 
-  function cropFaceDataURL(){
-    const W = canvas.width, H = canvas.height;
+      faceBoxEl.style.display = 'block';
+      faceBoxEl.style.left = (lastFace.xMin * w) + "px";
+      faceBoxEl.style.top = (lastFace.yMin * h) + "px";
+      faceBoxEl.style.width = (lastFace.width * w) + "px";
+      faceBoxEl.style.height = (lastFace.height * h) + "px";
+    }
 
-    let x = lastFace.xMin * W;
-    let y = lastFace.yMin * H;
-    let w = lastFace.width * W;
-    let h = lastFace.height * H;
+    startBtn.onclick = async () => {
+      try{
+        if(!window.isSecureContext){
+          sheet.style.display='block';
+          sheet.textContent = "❌ La camera richiede HTTPS.\nApri questa pagina su Vercel (https://...).";
+          return;
+        }
 
-    const padX = w * 0.20;
-    const padY = h * 0.35;
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio:false,
+          video:{ facingMode:"user", width:{ ideal:1280 }, height:{ ideal:720 } }
+        });
 
-    x = clamp(x - padX, 0, W-1);
-    y = clamp(y - padY, 0, H-1);
-    w = clamp(w + padX*2, 1, W - x);
-    h = clamp(h + padY*2, 1, H - y);
+        video.srcObject = stream;
+        await video.play().catch(()=>{});
 
-    const out = document.createElement('canvas');
-    const outW = 720;
-    const outH = clamp(Math.round(outW * (h / w)), 720, 960);
-    out.width = outW; out.height = outH;
+        initDetector();
+        snapBtn.disabled = false;
+        analyzeBtn.disabled = true;
 
-    const octx = out.getContext('2d');
-    octx.drawImage(canvas, x, y, w, h, 0, 0, out.width, out.height);
+        showToast("Camera attiva ✅");
+        requestAnimationFrame(detectionLoop);
+      }catch(err){
+        console.error(err);
+        alert("ERRORE CAMERA: " + (err?.name || "unknown") + " | " + (err?.message || ""));
+        sheet.style.display='block';
+        sheet.textContent = "❌ ERRORE CAMERA\n" + (err?.message || err);
+      }
+    };
 
-    return out.toDataURL('image/jpeg', 0.78);
-  }
+    snapBtn.onclick = () => {
+      if(!stream || !video.videoWidth) return;
 
-  function buildPastedPrompt(txt){
-    return (
-      "REPORT INCOLLATO (Beauty Mentor):\n\n" +
-      txt +
-      "\n\nRichiesta: leggi questo report e prepara una routine skincare + capelli + makeup (stile elegante, professionale, niente consigli medici)."
-    );
-  }
+      const W=900, H=1600;
+      canvas.width=W; canvas.height=H;
+      const ctx = canvas.getContext('2d');
 
-  analyzeBtn.onclick = async () => {
-    try{
-      analyzeBtn.disabled = true;
-      sheet.style.display='block';
-      sheet.textContent = "Analisi in corso… 🤖";
+      const vw = video.videoWidth, vh = video.videoHeight;
+      const targetAR = W/H, videoAR = vw/vh;
+      let sx=0,sy=0,sw=vw,sh=vh;
+      if(videoAR > targetAR){
+        sh = vh; sw = Math.round(vh * targetAR); sx = Math.round((vw - sw)/2);
+      }else{
+        sw = vw; sh = Math.round(vw / targetAR); sy = Math.round((vh - sh)/2);
+      }
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, W, H);
 
-      const faceDataUrl = cropFaceDataURL();
-
-      const resp = await fetch("/api/analyze-skin", {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({
-          image_data_url: faceDataUrl,
-          lang: document.documentElement.lang || "it"
-        })
-      });
-
-      if(!resp.ok){
-        const t = await resp.text();
-        throw new Error(t || "Errore API");
+      if(!lastFace){
+        sheet.style.display='block';
+        sheet.textContent = "Volto non rilevato. Inquadra il viso nella cornice e riprova.";
+        analyzeBtn.disabled = true;
+        showToast("Volto non rilevato ❌");
+        return;
+      }
+      if(!faceOk){
+        sheet.style.display='block';
+        sheet.textContent = "Volto troppo lontano. Avvicinati un po’ e riprova lo scatto.";
+        analyzeBtn.disabled = true;
+        showToast("Avvicina il volto 📏");
+        return;
       }
 
-      const payload = await resp.json();
+      analyzeBtn.disabled = false;
+      sheet.style.display='block';
+      sheet.textContent = "Selfie pronto ✅ Premi “Analizza”.";
+      showToast("Scatto OK 📸");
+    };
 
-      lastReportPayload = payload;
-      lastReportText = JSON.stringify(payload, null, 2);
+    function cropFaceDataURL(){
+      const W = canvas.width, H = canvas.height;
 
+      let x = lastFace.xMin * W;
+      let y = lastFace.yMin * H;
+      let w = lastFace.width * W;
+      let h = lastFace.height * H;
+
+      const padX = w * 0.20;
+      const padY = h * 0.35;
+
+      x = clamp(x - padX, 0, W-1);
+      y = clamp(y - padY, 0, H-1);
+      w = clamp(w + padX*2, 1, W - x);
+      h = clamp(h + padY*2, 1, H - y);
+
+      const out = document.createElement('canvas');
+      const outW = 720;
+      const outH = clamp(Math.round(outW * (h / w)), 720, 960);
+      out.width = outW; out.height = outH;
+
+      const octx = out.getContext('2d');
+      octx.drawImage(canvas, x, y, w, h, 0, 0, out.width, out.height);
+
+      return out.toDataURL('image/jpeg', 0.78);
+    }
+
+    function buildChatTextFromAnalysisPayload(payload){
+      // Testo “pronto chat” (gentile/professionale, niente medico)
+      const summary = payload?.summary || {};
+      const routine = payload?.routine || {};
+      const makeup = payload?.makeup || {};
+      const hair = payload?.hair || {};
+
+      return [
+        "Ciao! Ho appena fatto un’analisi Beauty Mentor. Ti incollo i risultati e vorrei una routine personalizzata (senza consigli medici):",
+        "",
+        `• Beauty Score: ${payload?.beauty_score ?? "--"}/100`,
+        `• Tipo pelle: ${summary.skin_type ?? "--"}`,
+        `• Osservazioni: ${(summary.concerns || []).join(", ") || "--"}`,
+        summary.notes ? `• Note: ${summary.notes}` : "",
+        "",
+        "Puoi suggerirmi:",
+        "1) Routine MATTINA (step, prodotti/texture consigliate, quantità indicative)",
+        "2) Routine SERA",
+        "3) 1-2 consigli makeup leggeri in base al viso (se possibile dal report)",
+        "4) 1-2 consigli capelli/cute coerenti con cute sensibile/oleosa/secca (se indicato)",
+        "",
+        "Se ti serve, posso anche dirti età, obiettivo (anti-age, acne, glow) e budget."
+      ].filter(Boolean).join("\n");
+    }
+
+    function buildPastedPrompt(txt){
+      return (
+        "Ciao! Non puoi vedere direttamente la foto, ma puoi leggere questo REPORT.\n" +
+        "Per favore: estrai le info e dammi una routine skincare + capelli + makeup (stile elegante, professionale, niente consigli medici).\n\n" +
+        "REPORT:\n" + txt
+      );
+    }
+
+    analyzeBtn.onclick = async () => {
+      try{
+        analyzeBtn.disabled = true;
+        sheet.style.display='block';
+        sheet.textContent = "Analisi in corso… 🤖";
+
+        const faceDataUrl = cropFaceDataURL();
+
+        const resp = await fetch("/api/analyze-skin", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({
+            image_data_url: faceDataUrl,
+            lang: document.documentElement.lang || "it"
+          })
+        });
+
+        if(!resp.ok){
+          const t = await resp.text();
+          throw new Error(t || "Errore API");
+        }
+
+        const payload = await resp.json();
+
+        // testo pronto per incollare nella chat dell’avatar
+        lastChatText = buildChatTextFromAnalysisPayload(payload);
+
+        sheet.textContent =
+          "✅ Analisi completata.\n\n" +
+          "Ora puoi:\n• Copiare il testo pronto per la chat\n• Aprire “Apri chat e incolla”\n";
+
+        copyBtn.disabled = false;
+        openChatPasteBtn.disabled = false;
+
+        showToast("Analisi completata ✅");
+      }catch(err){
+        console.error(err);
+        sheet.style.display='block';
+        sheet.textContent = "Errore analisi.\nDettaglio: " + (err?.message || err);
+        showToast("Errore analisi ❌");
+      }finally{
+        analyzeBtn.disabled = false;
+      }
+    };
+
+    usePastedBtn.onclick = () => {
+      const txt = (reportInput.value || "").trim();
+      if(!txt){
+        showToast("Incolla un report prima ✍️");
+        return;
+      }
+      lastChatText = buildPastedPrompt(txt);
+
+      sheet.style.display = 'block';
       sheet.textContent =
-        "✅ Analisi completata.\n\n" +
-        "Ora puoi:\n• Copiare il testo\n• Aprire popup “Chat & incolla”\n• (opzionale) Inviare all’avatar\n";
+        "✅ Testo pronto per la chat creato dal report incollato.\n\n" +
+        "Ora puoi:\n• “Copia testo”\n• “Apri chat e incolla”\n";
 
       copyBtn.disabled = false;
-      sendBtn.disabled = false;
       openChatPasteBtn.disabled = false;
 
-      showToast("Analisi completata ✅");
-    }catch(err){
-      console.error(err);
-      sheet.style.display='block';
-      sheet.textContent = "Errore analisi.\nDettaglio: " + (err?.message || err);
-      showToast("Errore analisi ❌");
-    }finally{
-      analyzeBtn.disabled = false;
+      showToast("Testo pronto ✅");
+    };
+
+    clearPastedBtn.onclick = () => {
+      reportInput.value = "";
+      showToast("Svuotato");
+    };
+
+    copyBtn.onclick = async () => {
+      try{
+        await navigator.clipboard.writeText(lastChatText || "");
+        showToast("Copiato 📋");
+      }catch{
+        showToast("Copia non riuscita");
+      }
+    };
+
+    function openPopupWithText(){
+      if(!lastChatText){
+        showToast("Nessun testo pronto");
+        return;
+      }
+      popup.style.display = "flex";
+      popupText.value = lastChatText;
+
+      setTimeout(() => {
+        popupText.focus();
+        popupText.setSelectionRange(0, popupText.value.length);
+      }, 50);
     }
-  };
 
-  // usa report incollato
-  usePastedBtn.onclick = () => {
-    const txt = (reportInput.value || "").trim();
-    if(!txt){
-      showToast("Incolla un report prima ✍️");
-      return;
-    }
-    lastReportText = buildPastedPrompt(txt);
-    lastReportPayload = { pasted_report: txt };
+    openChatPasteBtn.onclick = openPopupWithText;
 
-    sheet.style.display = 'block';
-    sheet.textContent =
-      "✅ Report incollato pronto.\n\n" +
-      "Ora puoi premere:\n• “📋 Copia Report”\n• “📨 Apri chat e incolla”\n";
+    popupCloseBtn.onclick = () => {
+      popup.style.display = "none";
+    };
 
-    copyBtn.disabled = false;
-    sendBtn.disabled = false;
-    openChatPasteBtn.disabled = false;
-
-    showToast("Report pronto ✅");
-  };
-
-  clearPastedBtn.onclick = () => {
-    reportInput.value = "";
-    showToast("Svuotato");
-  };
-
-  copyBtn.onclick = async () => {
-    try{
-      await navigator.clipboard.writeText(lastReportText || "");
-      showToast("Copiato 📋");
-    }catch{
-      showToast("Copia non riuscita");
-    }
-  };
-
-  sendBtn.onclick = () => {
-    if(!lastReportText) return;
-    try{
-      avatarFrame.contentWindow.postMessage({
-        type:"beauty_mentor_analysis",
-        text:lastReportText,
-        payload:lastReportPayload
-      }, "*");
-      showToast("Inviato all’avatar (se supportato) 👩‍🎤");
-    }catch{
-      showToast("Invio diretto non supportato. Usa Copia/Popup.");
-    }
-  };
-
-  // ✅ NEW: popup chat & incolla
-  function openPopupWithText(){
-    if(!lastReportText){
-      showToast("Nessun testo pronto");
-      return;
-    }
-    popup.style.display = "flex";
-    popupText.value = lastReportText;
-
-    // selezione automatica (mobile-friendly)
-    setTimeout(() => {
+    popupSelectBtn.onclick = () => {
       popupText.focus();
       popupText.setSelectionRange(0, popupText.value.length);
-    }, 50);
-  }
+      showToast("Selezionato ✅");
+    };
 
-  openChatPasteBtn.onclick = openPopupWithText;
+    popupCopyBtn.onclick = async () => {
+      try{
+        await navigator.clipboard.writeText(popupText.value || "");
+        showToast("Copiato 📋");
+      }catch{
+        popupText.focus();
+        popupText.setSelectionRange(0, popupText.value.length);
+        showToast("Copia non riuscita: copia manuale");
+      }
+    };
 
-  popupCloseBtn.onclick = () => {
-    popup.style.display = "none";
-  };
+    // 💬 Apri Chat Avatar: copia + chiude overlay + porta “sotto” l’avatar
+    openAvatarBtn.onclick = async () => {
+      try{
+        await navigator.clipboard.writeText(popupText.value || "");
+      }catch(e){
+        popupText.focus();
+        popupText.setSelectionRange(0, popupText.value.length);
+      }
 
-  popupSelectBtn.onclick = () => {
-    popupText.focus();
-    popupText.setSelectionRange(0, popupText.value.length);
-    showToast("Selezionato ✅");
-  };
+      popup.style.display = "none";
+      camOverlay.style.display = "none";
 
-  popupCopyBtn.onclick = async () => {
-    try{
-      await navigator.clipboard.writeText(popupText.value || "");
-      showToast("Copiato 📋");
-    }catch{
-      // fallback: lascia selezionato così l’utente copia manualmente
-      popupText.focus();
-      popupText.setSelectionRange(0, popupText.value.length);
-      showToast("Copia non riuscita: usa Copia manuale");
-    }
-  };
+      // prova a dare focus all’iframe (non apre la chat automaticamente, ma aiuta)
+      try { agentFrame.focus(); } catch(e) {}
 
-  // chiudi popup cliccando fuori
-  popup.addEventListener("click", (e) => {
-    if(e.target === popup) popup.style.display = "none";
-  });
+      showToast("Testo copiato ✅ Apri la chat dell’avatar e incolla 💬");
+    };
 
-  document.addEventListener("visibilitychange", () => {
-    if(document.hidden){
-      stopCamera();
-      // non chiudo popup automaticamente, è una scelta UX
-    }
-  });
-</script>
+    popup.addEventListener("click", (e) => {
+      if(e.target === popup) popup.style.display = "none";
+    });
 
+    document.addEventListener("visibilitychange", () => {
+      if(document.hidden){
+        stopCamera();
+      }
+    });
+  </script>
 </body>
 </html>
