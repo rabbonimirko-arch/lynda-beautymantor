@@ -6,7 +6,6 @@
   <title>Beauty Mentor • D-ID Agent + Selfie PRO</title>
 
   <style>
-    /* Reset */
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
@@ -22,13 +21,11 @@
       color:#fff;
     }
 
-    /* Safe-area iPhone */
     body {
       padding: env(safe-area-inset-top) env(safe-area-inset-right)
                env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
 
-    /* Contenitore 9:16 "letterbox" */
     .stage {
       width: 100vw;
       height: 100vh;
@@ -71,7 +68,6 @@
       z-index: 2;
     }
 
-    /* TOP BUTTONS (overlay sopra iframe) */
     .topUI{
       position:fixed;
       top:12px;
@@ -98,7 +94,7 @@
     .btn.danger{ background:rgba(255,60,60,0.55); border-color:rgba(255,60,60,0.80); }
     .btn:disabled{opacity:0.55;cursor:not-allowed;}
 
-    /* CAMERA OVERLAY FULLSCREEN 9:16 */
+    /* CAMERA OVERLAY */
     .camOverlay{position:fixed;inset:0;z-index:99999;background:#000;display:none;}
     .camHeader{
       position:absolute;top:0;left:0;right:0;z-index:5;
@@ -145,6 +141,7 @@
     .dot{width:10px;height:10px;border-radius:999px;background:rgba(255,120,120,0.95);box-shadow:0 0 14px rgba(255,120,120,0.45);}
     .centerIndicator.ok .dot{background:rgba(120,255,160,0.95);box-shadow:0 0 14px rgba(120,255,160,0.45);}
 
+    /* (facoltativo) sheet, ma non la UX principale */
     .sheet{
       position:absolute;left:12px;right:12px;
       bottom:calc(150px + env(safe-area-inset-bottom));
@@ -191,41 +188,75 @@
     }
     .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
 
-    /* Popup "Apri chat e incolla" */
-    .popup{
+    /* MODAL RISULTATO (NUOVO) */
+    .resultModal{
       position:fixed;inset:0;z-index:999999;
-      background:rgba(0,0,0,0.65);
+      background:rgba(0,0,0,0.68);
       display:none;
-      align-items:center;justify-content:center;
+      align-items:center;
+      justify-content:center;
       padding:14px;
     }
-    .popupCard{
-      width:min(720px, 100%);
-      max-height:80dvh;
+    .resultCard{
+      width:min(760px, 100%);
+      max-height:86dvh;
       overflow:hidden;
       border-radius:18px;
       border:1px solid rgba(255,255,255,0.14);
-      background:rgba(0,0,0,0.68);
+      background:rgba(0,0,0,0.74);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.55);
+      box-shadow:0 12px 40px rgba(0,0,0,0.55);
+      display:flex;
+      flex-direction:column;
     }
-    .popupHeader{
-      display:flex;align-items:center;justify-content:space-between;
-      padding:12px 12px;
+    .resultHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:12px;
       border-bottom:1px solid rgba(255,255,255,0.12);
-      font-weight:800;
+      font-weight:900;
     }
-    .popupBody{padding:12px;}
-    .popupBody textarea{
-      min-height:220px;
-      max-height:52dvh;
-      width:100%;
+    .resultBody{
+      padding:12px;
+      overflow:auto;
+    }
+    .pillRow{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .pill{
       font-size:12px;
+      padding:8px 10px;
+      border-radius:999px;
+      background:rgba(255,255,255,0.10);
+      border:1px solid rgba(255,255,255,0.12);
     }
-    .popupFooter{
-      display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;
-      padding:12px;border-top:1px solid rgba(255,255,255,0.12);
+    .sectionTitle{
+      font-size:13px;
+      font-weight:900;
+      margin:12px 0 6px;
+      opacity:.95;
+    }
+    .box{
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(255,255,255,0.06);
+      padding:10px;
+      white-space:pre-wrap;
+      font-size:12px;
+      line-height:1.35;
+    }
+    .resultFooter{
+      padding:12px;
+      border-top:1px solid rgba(255,255,255,0.12);
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
     }
 
     .toast{
@@ -239,20 +270,17 @@
     ::-webkit-scrollbar { width: 0; height: 0; }
   </style>
 
-  <!-- MediaPipe Face Detection (stabile) -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4/face_detection.js"></script>
 </head>
 
 <body>
 
-  <!-- Top UI -->
   <div class="topUI">
     <button class="btn primary" id="openCamBtn">📷 Selfie PRO</button>
     <button class="btn" id="copyBtn" disabled>📋 Copia testo</button>
     <button class="btn" id="openChatPasteBtn" disabled>📨 Apri chat e incolla</button>
   </div>
 
-  <!-- D-ID Agent (index1) -->
   <div class="stage">
     <div class="frame">
       <div class="loading" id="loading">Caricamento…</div>
@@ -267,7 +295,7 @@
     </div>
   </div>
 
-  <!-- Camera Overlay -->
+  <!-- CAMERA OVERLAY -->
   <div class="camOverlay" id="camOverlay">
     <div class="camHeader">
       <span>Beauty Mentor • Camera 9:16</span>
@@ -297,7 +325,7 @@
 
     <div class="pasteBox">
       <div class="pasteHint">
-       
+        Incolla qui un report (JSON o testo). Io preparo un messaggio “pronto chat” da incollare all’avatar.
       </div>
 
       <textarea id="reportInput" placeholder="Incolla qui il report JSON / testo dell’analisi…"></textarea>
@@ -317,23 +345,30 @@
     </div>
   </div>
 
-  <!-- Popup overlay -->
-  <div class="popup" id="popup">
-    <div class="popupCard">
-      <div class="popupHeader">
-        <span>📨 Apri chat e incolla</span>
-        <button class="btn danger" id="popupCloseBtn">Chiudi</button>
+  <!-- POPUP: Apri chat e incolla (resta, ma ora useremo anche il modal risultato) -->
+  <div class="popup" id="popup" style="display:none"></div>
+
+  <!-- MODAL RISULTATO (NUOVO) -->
+  <div class="resultModal" id="resultModal">
+    <div class="resultCard">
+      <div class="resultHeader">
+        <span>✅ Risultato Analisi</span>
+        <button class="btn danger" id="resultCloseBtn">Chiudi</button>
       </div>
-      <div class="popupBody">
-        <div style="font-size:12px;opacity:.9;margin-bottom:8px;">
-          1) Tocca <b>Copia</b> (o <b>Apri Chat Avatar</b>)  2) Apri la chat dell’avatar  3) Incolla.
-        </div>
-        <textarea id="popupText" readonly></textarea>
+
+      <div class="resultBody">
+        <div class="pillRow" id="pillRow"></div>
+
+        <div class="sectionTitle">Sintesi</div>
+        <div class="box" id="resultSummaryBox">—</div>
+
+        <div class="sectionTitle">Testo pronto per la chat</div>
+        <div class="box" id="resultChatBox">—</div>
       </div>
-      <div class="popupFooter">
-        <button class="btn" id="popupCopyBtn">📋 Copia</button>
-        <button class="btn" id="popupSelectBtn">✅ Seleziona</button>
-        <button class="btn primary" id="openAvatarBtn">💬 Apri Chat Avatar</button>
+
+      <div class="resultFooter">
+        <button class="btn" id="resultCopyBtn">📋 Copia</button>
+        <button class="btn primary" id="resultOpenAvatarBtn">💬 Apri Chat Avatar</button>
       </div>
     </div>
   </div>
@@ -341,7 +376,7 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    /* ====== index1 behaviors ====== */
+    /* ====== iframe behaviors ====== */
     const agentFrame = document.getElementById('agentFrame');
     const loading = document.getElementById('loading');
 
@@ -366,7 +401,7 @@
       lastTouchEnd = now;
     }, { passive: false });
 
-    /* ====== Camera + Analysis (index2) ====== */
+    /* ====== Camera + Analysis ====== */
     const camOverlay = document.getElementById('camOverlay');
     const toast = document.getElementById('toast');
 
@@ -392,13 +427,14 @@
     const usePastedBtn = document.getElementById('usePastedBtn');
     const clearPastedBtn = document.getElementById('clearPastedBtn');
 
-    // Popup
-    const popup = document.getElementById('popup');
-    const popupCloseBtn = document.getElementById('popupCloseBtn');
-    const popupCopyBtn = document.getElementById('popupCopyBtn');
-    const popupSelectBtn = document.getElementById('popupSelectBtn');
-    const popupText = document.getElementById('popupText');
-    const openAvatarBtn = document.getElementById('openAvatarBtn');
+    // Modal risultato
+    const resultModal = document.getElementById('resultModal');
+    const resultCloseBtn = document.getElementById('resultCloseBtn');
+    const resultCopyBtn = document.getElementById('resultCopyBtn');
+    const resultOpenAvatarBtn = document.getElementById('resultOpenAvatarBtn');
+    const pillRow = document.getElementById('pillRow');
+    const resultSummaryBox = document.getElementById('resultSummaryBox');
+    const resultChatBox = document.getElementById('resultChatBox');
 
     let stream = null;
     let detector = null;
@@ -407,6 +443,8 @@
 
     // testo pronto da incollare in chat
     let lastChatText = "";
+    // payload ultimo (per riassunto)
+    let lastPayload = null;
 
     function showToast(msg){
       toast.textContent = msg;
@@ -517,7 +555,7 @@
       try{
         if(!window.isSecureContext){
           sheet.style.display='block';
-          sheet.textContent = "❌ La camera richiede HTTPS.\nApri questa pagina su Vercel (https://...).";
+          sheet.textContent = "La camera richiede HTTPS (Vercel).";
           return;
         }
 
@@ -537,9 +575,8 @@
         requestAnimationFrame(detectionLoop);
       }catch(err){
         console.error(err);
-        alert("ERRORE CAMERA: " + (err?.name || "unknown") + " | " + (err?.message || ""));
         sheet.style.display='block';
-        sheet.textContent = "❌ ERRORE CAMERA\n" + (err?.message || err);
+        sheet.textContent = "ERRORE CAMERA: " + (err?.message || err);
       }
     };
 
@@ -562,22 +599,20 @@
 
       if(!lastFace){
         sheet.style.display='block';
-        sheet.textContent = "Volto non rilevato. Inquadra il viso nella cornice e riprova.";
+        sheet.textContent = "Volto non rilevato. Inquadra il viso nella cornice.";
         analyzeBtn.disabled = true;
         showToast("Volto non rilevato ❌");
         return;
       }
       if(!faceOk){
         sheet.style.display='block';
-        sheet.textContent = "Volto troppo lontano. Avvicinati un po’ e riprova lo scatto.";
+        sheet.textContent = "Volto troppo lontano. Avvicinati un po’.";
         analyzeBtn.disabled = true;
         showToast("Avvicina il volto 📏");
         return;
       }
 
       analyzeBtn.disabled = false;
-      sheet.style.display='block';
-      sheet.textContent = "Selfie pronto ✅ Premi “Analizza”.";
       showToast("Scatto OK 📸");
     };
 
@@ -609,27 +644,35 @@
     }
 
     function buildChatTextFromAnalysisPayload(payload){
-      // Testo “pronto chat” (gentile/professionale, niente medico)
       const summary = payload?.summary || {};
-      const routine = payload?.routine || {};
-      const makeup = payload?.makeup || {};
-      const hair = payload?.hair || {};
-
       return [
-        "Ciao! Ho appena fatto un’analisi Beauty Mentor. Ti incollo i risultati e vorrei una routine personalizzata (senza consigli medici):",
+        "Ciao! Ho appena fatto un’analisi Beauty Mentor. Vorrei una routine personalizzata (senza consigli medici):",
         "",
         `• Beauty Score: ${payload?.beauty_score ?? "--"}/100`,
         `• Tipo pelle: ${summary.skin_type ?? "--"}`,
         `• Osservazioni: ${(summary.concerns || []).join(", ") || "--"}`,
         summary.notes ? `• Note: ${summary.notes}` : "",
         "",
-        "Puoi suggerirmi:",
-        "1) Routine MATTINA (step, prodotti/texture consigliate, quantità indicative)",
+        "Mi prepari:",
+        "1) Routine MATTINA (step + texture/prodotti consigliati)",
         "2) Routine SERA",
-        "3) 1-2 consigli makeup leggeri in base al viso (se possibile dal report)",
-        "4) 1-2 consigli capelli/cute coerenti con cute sensibile/oleosa/secca (se indicato)",
+        "3) 1-2 consigli makeup naturali",
+        "4) 1-2 consigli cute/capelli in base al report",
+      ].filter(Boolean).join("\n");
+    }
+
+    function buildSummaryText(payload){
+      const s = payload?.summary || {};
+      const score = payload?.beauty_score ?? "--";
+      const concerns = (s.concerns || []).map(x => `- ${x}`).join("\n") || "- —";
+      return [
+        `Beauty Score: ${score}/100`,
+        `Tipo pelle: ${s.skin_type ?? "—"}`,
         "",
-        "Se ti serve, posso anche dirti età, obiettivo (anti-age, acne, glow) e budget."
+        "Osservazioni:",
+        concerns,
+        "",
+        s.notes ? `Note: ${s.notes}` : ""
       ].filter(Boolean).join("\n");
     }
 
@@ -641,11 +684,32 @@
       );
     }
 
+    function openResultModal(){
+      // Pills
+      pillRow.innerHTML = "";
+      const score = (lastPayload && typeof lastPayload.beauty_score !== "undefined") ? `${lastPayload.beauty_score}/100` : "—";
+      const type = lastPayload?.summary?.skin_type || "—";
+      const pills = [
+        { t: `Beauty Score: ${score}` },
+        { t: `Pelle: ${type}` }
+      ];
+      pills.forEach(p => {
+        const el = document.createElement("div");
+        el.className = "pill";
+        el.textContent = p.t;
+        pillRow.appendChild(el);
+      });
+
+      resultSummaryBox.textContent = lastPayload ? buildSummaryText(lastPayload) : "—";
+      resultChatBox.textContent = lastChatText || "—";
+
+      resultModal.style.display = "flex";
+    }
+
     analyzeBtn.onclick = async () => {
       try{
         analyzeBtn.disabled = true;
-        sheet.style.display='block';
-        sheet.textContent = "Analisi in corso… 🤖";
+        showToast("Analisi…");
 
         const faceDataUrl = cropFaceDataURL();
 
@@ -664,22 +728,22 @@
         }
 
         const payload = await resp.json();
+        lastPayload = payload;
 
-        // testo pronto per incollare nella chat dell’avatar
         lastChatText = buildChatTextFromAnalysisPayload(payload);
 
-        sheet.textContent =
-          "✅ Analisi completata.\n\n" +
-          "Ora puoi:\n• Copiare il testo pronto per la chat\n• Aprire “Apri chat e incolla”\n";
-
+        // abilita bottoni
         copyBtn.disabled = false;
         openChatPasteBtn.disabled = false;
 
+        // mostra RISULTATO vero
+        openResultModal();
         showToast("Analisi completata ✅");
+
       }catch(err){
         console.error(err);
         sheet.style.display='block';
-        sheet.textContent = "Errore analisi.\nDettaglio: " + (err?.message || err);
+        sheet.textContent = "Errore analisi: " + (err?.message || err);
         showToast("Errore analisi ❌");
       }finally{
         analyzeBtn.disabled = false;
@@ -689,19 +753,26 @@
     usePastedBtn.onclick = () => {
       const txt = (reportInput.value || "").trim();
       if(!txt){
-        showToast("Incolla un report prima ✍️");
+        showToast("Incolla un report ✍️");
         return;
       }
+      lastPayload = null; // non abbiamo JSON strutturato, solo testo incollato
       lastChatText = buildPastedPrompt(txt);
-
-      sheet.style.display = 'block';
-      sheet.textContent =
-        "✅ Testo pronto per la chat creato dal report incollato.\n\n" +
-        "Ora puoi:\n• “Copia testo”\n• “Apri chat e incolla”\n";
 
       copyBtn.disabled = false;
       openChatPasteBtn.disabled = false;
 
+      // Mostra modal con “testo chat” (summary vuota)
+      pillRow.innerHTML = "";
+      const el = document.createElement("div");
+      el.className = "pill";
+      el.textContent = "Report incollato";
+      pillRow.appendChild(el);
+
+      resultSummaryBox.textContent = "Sintesi: report incollato (nessun JSON strutturato).";
+      resultChatBox.textContent = lastChatText;
+
+      resultModal.style.display = "flex";
       showToast("Testo pronto ✅");
     };
 
@@ -719,63 +790,38 @@
       }
     };
 
-    function openPopupWithText(){
-      if(!lastChatText){
-        showToast("Nessun testo pronto");
-        return;
-      }
-      popup.style.display = "flex";
-      popupText.value = lastChatText;
-
-      setTimeout(() => {
-        popupText.focus();
-        popupText.setSelectionRange(0, popupText.value.length);
-      }, 50);
-    }
-
-    openChatPasteBtn.onclick = openPopupWithText;
-
-    popupCloseBtn.onclick = () => {
-      popup.style.display = "none";
+    openChatPasteBtn.onclick = () => {
+      if(!lastChatText){ showToast("Nessun testo pronto"); return; }
+      // apre direttamente il modal risultato (già con testo selezionabile/copiabile)
+      openResultModal();
     };
 
-    popupSelectBtn.onclick = () => {
-      popupText.focus();
-      popupText.setSelectionRange(0, popupText.value.length);
-      showToast("Selezionato ✅");
-    };
+    // Modal actions
+    resultCloseBtn.onclick = () => { resultModal.style.display = "none"; };
 
-    popupCopyBtn.onclick = async () => {
+    resultCopyBtn.onclick = async () => {
       try{
-        await navigator.clipboard.writeText(popupText.value || "");
+        await navigator.clipboard.writeText(lastChatText || "");
         showToast("Copiato 📋");
       }catch{
-        popupText.focus();
-        popupText.setSelectionRange(0, popupText.value.length);
-        showToast("Copia non riuscita: copia manuale");
+        showToast("Copia non riuscita");
       }
     };
 
-    // 💬 Apri Chat Avatar: copia + chiude overlay + porta “sotto” l’avatar
-    openAvatarBtn.onclick = async () => {
+    // 💬 Apri Chat Avatar: copia + chiude overlay/modal + focus iframe
+    resultOpenAvatarBtn.onclick = async () => {
       try{
-        await navigator.clipboard.writeText(popupText.value || "");
-      }catch(e){
-        popupText.focus();
-        popupText.setSelectionRange(0, popupText.value.length);
-      }
-
-      popup.style.display = "none";
+        await navigator.clipboard.writeText(lastChatText || "");
+      }catch(e){}
+      resultModal.style.display = "none";
       camOverlay.style.display = "none";
-
-      // prova a dare focus all’iframe (non apre la chat automaticamente, ma aiuta)
       try { agentFrame.focus(); } catch(e) {}
-
       showToast("Testo copiato ✅ Apri la chat dell’avatar e incolla 💬");
     };
 
-    popup.addEventListener("click", (e) => {
-      if(e.target === popup) popup.style.display = "none";
+    // chiudi modal cliccando fuori
+    resultModal.addEventListener("click", (e) => {
+      if(e.target === resultModal) resultModal.style.display = "none";
     });
 
     document.addEventListener("visibilitychange", () => {
@@ -786,4 +832,3 @@
   </script>
 </body>
 </html>
-
