@@ -271,8 +271,7 @@
     </div>
     <div class="popupFooter">
       <button class="btn" id="popupCopyBtn">📋 Copia</button>
-      <button class="btn" id="popupSelectBtn">✅ Seleziona</button>
-      <button class="btn primary" id="openAvatarBtn">💬 Apri Chat Avatar</button>
+      <button class="btn primary" id="popupSelectBtn">✅ Seleziona tutto</button>
     </div>
   </div>
 </div>
@@ -314,7 +313,6 @@
   const popupCopyBtn = document.getElementById('popupCopyBtn');
   const popupSelectBtn = document.getElementById('popupSelectBtn');
   const popupText = document.getElementById('popupText');
-  const openAvatarBtn = document.getElementById('openAvatarBtn');
 
   let stream = null;
   let detector = null;
@@ -628,7 +626,7 @@
     }
   };
 
-  // ✅ popup chat & incolla
+  // ✅ NEW: popup chat & incolla
   function openPopupWithText(){
     if(!lastReportText){
       showToast("Nessun testo pronto");
@@ -637,6 +635,7 @@
     popup.style.display = "flex";
     popupText.value = lastReportText;
 
+    // selezione automatica (mobile-friendly)
     setTimeout(() => {
       popupText.focus();
       popupText.setSelectionRange(0, popupText.value.length);
@@ -660,26 +659,11 @@
       await navigator.clipboard.writeText(popupText.value || "");
       showToast("Copiato 📋");
     }catch{
+      // fallback: lascia selezionato così l’utente copia manualmente
       popupText.focus();
       popupText.setSelectionRange(0, popupText.value.length);
-      showToast("Copia non riuscita: copia manuale");
+      showToast("Copia non riuscita: usa Copia manuale");
     }
-  };
-
-  // ✅ NEW: Apri Chat Avatar (copia + chiude overlay)
-  openAvatarBtn.onclick = async () => {
-    try{
-      await navigator.clipboard.writeText(popupText.value || "");
-    }catch(e){
-      // fallback: lascia selezionato
-      popupText.focus();
-      popupText.setSelectionRange(0, popupText.value.length);
-    }
-
-    popup.style.display = "none";
-    camOverlay.style.display = "none";
-
-    showToast("Testo copiato. Incollalo nella chat dell’avatar 💬");
   };
 
   // chiudi popup cliccando fuori
@@ -690,6 +674,7 @@
   document.addEventListener("visibilitychange", () => {
     if(document.hidden){
       stopCamera();
+      // non chiudo popup automaticamente, è una scelta UX
     }
   });
 </script>
