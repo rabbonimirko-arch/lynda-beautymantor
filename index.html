@@ -10,117 +10,56 @@
 
 <style>
   *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
-  html,body{
-    width:100%;height:100%;
-    background:#000;color:#fff;
-    overflow:hidden;position:fixed;
-    touch-action:manipulation;
-    overscroll-behavior:none;
-  }
+  html,body{width:100%;height:100%;background:#000;color:#fff;overflow:hidden;position:fixed;touch-action:manipulation;overscroll-behavior:none;}
 
-  /* AVATAR (cover 16:9, fullscreen) */
-  .stage{
-    position:fixed;inset:0;
-    width:100vw;height:100vh;height:100dvh;
-    background:#000;overflow:hidden;
-    z-index:1;
-  }
+  .stage{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;background:#000;overflow:hidden;z-index:1;}
   #avatarFrame{
-    position:absolute;
-    top:50%;left:50%;
-    width:177.78vh;
-    height:100vh;height:100dvh;
-    min-width:100vw;
-    min-height:56.25vw;
-    transform:translate(-50%,-50%);
-    border:none;background:#000;
+    position:absolute;top:50%;left:50%;
+    width:177.78vh;height:100vh;height:100dvh;min-width:100vw;min-height:56.25vw;
+    transform:translate(-50%,-50%);border:none;background:#000;
   }
   @media (min-aspect-ratio: 16/9){
     #avatarFrame{width:100vw;height:56.25vw;min-width:auto;min-height:auto;}
   }
 
-  /* TOP BUTTONS */
-  .topUI{
-    position:fixed;top:12px;left:12px;
-    z-index:9999;
-    display:flex;gap:10px;flex-wrap:wrap;
-    max-width:calc(100vw - 24px);
-  }
+  .topUI{position:fixed;top:12px;left:12px;z-index:9999;display:flex;gap:10px;flex-wrap:wrap;max-width:calc(100vw - 24px);}
   .btn{
-    border:none;
-    padding:10px 12px;
-    border-radius:14px;
-    background:rgba(255,255,255,0.12);
-    border:1px solid rgba(255,255,255,0.14);
-    color:#fff;font-size:14px;
-    cursor:pointer;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    border:none;padding:10px 12px;border-radius:14px;
+    background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.14);
+    color:#fff;font-size:14px;cursor:pointer;
+    backdrop-filter: blur(10px);-webkit-backdrop-filter: blur(10px);
   }
   .btn.primary{ background:rgba(255,79,160,0.75); border-color:rgba(255,79,160,0.95); }
+  .btn.danger{ background:rgba(255,60,60,0.55); border-color:rgba(255,60,60,0.80); }
   .btn:disabled{opacity:0.55;cursor:not-allowed;}
 
-  /* CAMERA OVERLAY FULLSCREEN 9:16 */
-  .camOverlay{
-    position:fixed;inset:0;
-    z-index:99999;
-    background:#000;
-    display:none;
-  }
-
+  .camOverlay{position:fixed;inset:0;z-index:99999;background:#000;display:none;}
   .camHeader{
-    position:absolute;top:0;left:0;right:0;
-    z-index:5;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:12px;
-    padding-top:calc(12px + env(safe-area-inset-top));
+    position:absolute;top:0;left:0;right:0;z-index:5;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:12px;padding-top:calc(12px + env(safe-area-inset-top));
     background:linear-gradient(to bottom, rgba(0,0,0,0.78), rgba(0,0,0,0.25));
     border-bottom:1px solid rgba(255,255,255,0.12);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
     font-weight:800;
   }
-  .btn.danger{ background:rgba(255,60,60,0.55); border-color:rgba(255,60,60,0.80); }
 
-  .viewport{
-    position:absolute;inset:0;
-    display:flex;align-items:center;justify-content:center;
-  }
-
+  .viewport{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
   .videoWrap{
     position:relative;
     width:min(100vw, calc(100dvh * 9 / 16));
     height:min(100dvh, calc(100vw * 16 / 9));
     aspect-ratio:9/16;
-    overflow:hidden;
-    background:#000;
-    border-radius:18px;
-    border:1px solid rgba(255,255,255,0.12);
+    overflow:hidden;background:#000;border-radius:18px;border:1px solid rgba(255,255,255,0.12);
   }
   @media (max-aspect-ratio: 9/16){
-    .videoWrap{
-      width:100vw;height:100dvh;border-radius:0;border:none;
-    }
+    .videoWrap{width:100vw;height:100dvh;border-radius:0;border:none;}
   }
   video,canvas{width:100%;height:100%;object-fit:cover;display:block}
 
-  .faceFrame{
-    position:absolute;inset:0;
-    display:flex;align-items:center;justify-content:center;
-    pointer-events:none;
-  }
-  .frameShape{
-    width:72%;height:78%;
-    border:2px solid rgba(255,255,255,0.55);
-    border-radius:46px;
-    box-shadow: 0 0 0 9999px rgba(0,0,0,0.18);
-  }
-  .hintText{
-    position:absolute;bottom:96px;left:12px;right:12px;
-    text-align:center;font-size:12px;opacity:0.92;
-  }
+  .faceFrame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+  .frameShape{width:72%;height:78%;border:2px solid rgba(255,255,255,0.55);border-radius:46px;box-shadow: 0 0 0 9999px rgba(0,0,0,0.18);}
+  .hintText{position:absolute;bottom:96px;left:12px;right:12px;text-align:center;font-size:12px;opacity:0.92;}
 
   .faceBox{
     position:absolute;border:2px solid rgba(255,79,160,0.95);
@@ -128,76 +67,52 @@
     box-shadow:0 0 18px rgba(255,79,160,0.35);
   }
 
-  /* Center indicator */
   .centerIndicator{
-    position:absolute;
-    top:calc(64px + env(safe-area-inset-top));
-    left:50%;transform:translateX(-50%);
-    z-index:6;
+    position:absolute;top:calc(64px + env(safe-area-inset-top));
+    left:50%;transform:translateX(-50%);z-index:6;
     display:inline-flex;align-items:center;gap:8px;
     padding:8px 12px;border-radius:999px;
-    background:rgba(0,0,0,0.45);
-    border:1px solid rgba(255,255,255,0.14);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.14);
+    backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
     font-size:13px;font-weight:700;
   }
-  .dot{
-    width:10px;height:10px;border-radius:999px;
-    background:rgba(255,120,120,0.95);
-    box-shadow:0 0 14px rgba(255,120,120,0.45);
-  }
-  .centerIndicator.ok .dot{
-    background:rgba(120,255,160,0.95);
-    box-shadow:0 0 14px rgba(120,255,160,0.45);
-  }
+  .dot{width:10px;height:10px;border-radius:999px;background:rgba(255,120,120,0.95);box-shadow:0 0 14px rgba(255,120,120,0.45);}
+  .centerIndicator.ok .dot{background:rgba(120,255,160,0.95);box-shadow:0 0 14px rgba(120,255,160,0.45);}
 
-  /* Bottom controls */
   .camControls{
     position:absolute;left:0;right:0;bottom:0;z-index:6;
-    padding:12px;
-    padding-bottom:calc(12px + env(safe-area-inset-bottom));
+    padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom));
     background:linear-gradient(to top, rgba(0,0,0,0.82), rgba(0,0,0,0.22));
     border-top:1px solid rgba(255,255,255,0.10);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
   }
   .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
 
   .sheet{
     position:absolute;left:12px;right:12px;
     bottom:calc(92px + env(safe-area-inset-bottom));
-    z-index:7;
-    max-height:34dvh;overflow:auto;
-    padding:10px;border-radius:16px;
-    border:1px solid rgba(255,255,255,0.12);
+    z-index:7;max-height:34dvh;overflow:auto;
+    padding:10px;border-radius:16px;border:1px solid rgba(255,255,255,0.12);
     background:rgba(0,0,0,0.50);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    display:none;
-    white-space:pre-wrap;
-    font-size:12px;line-height:1.35;
+    backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
+    display:none;white-space:pre-wrap;font-size:12px;line-height:1.35;
   }
 
   .toast{
     position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
-    z-index:999999;
-    background:rgba(0,0,0,0.74);
+    z-index:999999;background:rgba(0,0,0,0.74);
     border:1px solid rgba(255,255,255,0.14);
-    padding:10px 12px;border-radius:999px;
-    font-size:13px;display:none;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    padding:10px 12px;border-radius:999px;font-size:13px;display:none;
+    backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
   }
 </style>
 
-<!-- MediaPipe Face Detection -->
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js"></script>
+<!-- ✅ MediaPipe Face Detection (versione stabile) -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4/face_detection.js"></script>
 
 </head>
 <body>
 
-<!-- Avatar -->
 <div class="stage">
   <iframe
     id="avatarFrame"
@@ -207,14 +122,12 @@
   </iframe>
 </div>
 
-<!-- Top UI -->
 <div class="topUI">
   <button class="btn primary" id="openCamBtn">📷 Selfie PRO</button>
   <button class="btn" id="copyBtn" disabled>📋 Copia Report</button>
   <button class="btn" id="sendBtn" disabled>👩‍🎤 Invia all’Avatar</button>
 </div>
 
-<!-- Camera Overlay -->
 <div class="camOverlay" id="camOverlay">
   <div class="camHeader">
     <span>Beauty Mentor • Camera 9:16</span>
@@ -323,11 +236,31 @@
     setCenter(false, "Centra il volto");
   }
 
+  // ✅ FIX: costruttore compatibile con tutte le versioni
+  function getFaceDetectionCtor(){
+    // some builds: window.FaceDetection is the class
+    if (typeof window.FaceDetection === "function") return window.FaceDetection;
+    // other builds: window.FaceDetection.FaceDetection is the class
+    if (window.FaceDetection && typeof window.FaceDetection.FaceDetection === "function") return window.FaceDetection.FaceDetection;
+    return null;
+  }
+
   function initDetector(){
     if(detector) return detector;
-    detector = new FaceDetection.FaceDetection({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`
+
+    const Ctor = getFaceDetectionCtor();
+    if (!Ctor) {
+      sheet.style.display = "block";
+      sheet.textContent =
+        "❌ FaceDetection non disponibile.\n" +
+        "Controlla che lo script @mediapipe/face_detection sia caricato correttamente.\n";
+      throw new Error("FaceDetection constructor not found");
+    }
+
+    detector = new Ctor({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4/${file}`
     });
+
     detector.setOptions({ model:"short", minDetectionConfidence:0.6 });
 
     detector.onResults((results)=>{
@@ -391,11 +324,7 @@
 
       stream = await navigator.mediaDevices.getUserMedia({
         audio:false,
-        video:{
-          facingMode:"user",
-          width:{ ideal:1280 },
-          height:{ ideal:720 }
-        }
+        video:{ facingMode:"user", width:{ ideal:1280 }, height:{ ideal:720 } }
       });
 
       video.srcObject = stream;
@@ -412,36 +341,26 @@
       alert("ERRORE CAMERA: " + (err?.name || "unknown") + " | " + (err?.message || ""));
       sheet.style.display='block';
       sheet.textContent =
-        "❌ ERRORE CAMERA\n\n" +
-        "name: " + (err?.name || "unknown") + "\n" +
-        "message: " + (err?.message || "") + "\n\n" +
-        "Soluzioni:\n" +
-        "• Lucchetto → Impostazioni sito → Fotocamera → Consenti\n" +
-        "• Apri in Safari/Chrome (non browser in-app)\n" +
-        "• Chiudi altre app che usano la camera\n";
+        "❌ ERRORE\n\n" +
+        (err?.message || err) + "\n\n" +
+        "Se è un errore FaceDetection, controlla connessione e CDN.\n";
     }
   };
 
   snapBtn.onclick = () => {
     if(!stream || !video.videoWidth) return;
 
-    // 9:16 canvas
     const W=900, H=1600;
     canvas.width=W; canvas.height=H;
     const ctx = canvas.getContext('2d');
 
-    // cover crop draw
     const vw = video.videoWidth, vh = video.videoHeight;
     const targetAR = W/H, videoAR = vw/vh;
     let sx=0,sy=0,sw=vw,sh=vh;
     if(videoAR > targetAR){
-      sh = vh;
-      sw = Math.round(vh * targetAR);
-      sx = Math.round((vw - sw)/2);
+      sh = vh; sw = Math.round(vh * targetAR); sx = Math.round((vw - sw)/2);
     }else{
-      sw = vw;
-      sh = Math.round(vw / targetAR);
-      sy = Math.round((vh - sh)/2);
+      sw = vw; sh = Math.round(vw / targetAR); sy = Math.round((vh - sh)/2);
     }
     ctx.drawImage(video, sx, sy, sw, sh, 0, 0, W, H);
 
@@ -495,44 +414,12 @@
 
   function buildReportText(payload){
     const s = payload?.summary || {};
-    const r = payload?.routine || {};
-    const m = payload?.makeup || {};
-    const h = payload?.hair || {};
-    const met = payload?.metrics || {};
-
     return [
       "ANALISI SELFIE (Beauty Mentor):",
       `- Beauty Score: ${payload?.beauty_score ?? "--"}/100`,
       `- Tipo pelle: ${s.skin_type ?? "--"}`,
       `- Concerns: ${(s.concerns || []).join(", ") || "--"}`,
       s.notes ? `- Note: ${s.notes}` : "",
-      "",
-      "METRICHE (0-10):",
-      Object.keys(met).length ? (
-        [
-          `Uniformità: ${met.uniformity ?? "--"}`,
-          `Luminosità: ${met.brightness ?? "--"}`,
-          `Texture: ${met.texture ?? "--"}`,
-          `Idratazione: ${met.hydration ?? "--"}`,
-          `Pori: ${met.pores ?? "--"}`,
-          `Rossori: ${met.redness ?? "--"}`,
-          `Vitalità: ${met.vitality ?? "--"}`,
-          `Simmetria: ${met.symmetry ?? "--"}`,
-          `Armonia: ${met.harmony ?? "--"}`,
-          `Qualità Foto: ${met.photo_quality_factor ?? "--"} (${met.why_photo_quality ?? ""})`
-        ].join(" | ")
-      ) : "—",
-      "",
-      "ROUTINE:",
-      `Mattina: ${(r.morning || []).join(" → ") || "--"}`,
-      `Sera: ${(r.night || []).join(" → ") || "--"}`,
-      r.notes ? `Note: ${r.notes}` : "",
-      "",
-      "MAKEUP:",
-      `- ${(m.tips || []).join(" | ") || "--"}`,
-      "",
-      "CAPELLI/CUTE:",
-      `- ${(h.tips || []).join(" | ") || "--"}`,
       "",
       "Istruzioni: Rispondi in modo elegante e professionale, senza consigli medici."
     ].filter(Boolean).join("\n");
@@ -543,12 +430,6 @@
       analyzeBtn.disabled = true;
       sheet.style.display='block';
       sheet.textContent = "Analisi in corso… 🤖";
-
-      if(!lastFace || !faceOk){
-        sheet.textContent = "Volto non valido. Avvicina e riprova lo scatto.";
-        analyzeBtn.disabled = false;
-        return;
-      }
 
       const faceDataUrl = cropFaceDataURL();
 
