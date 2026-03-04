@@ -1,14 +1,56 @@
-// /api/analyze-skin.js  (Vercel Function robusta + formato Responses corretto)
+// /api/analyze-skin.js
+// Vercel Serverless Function (Node) — Robust selfie analysis with OpenAI Responses API
+// - Accepts: { image_data_url: "data:image/jpeg;base64,...", lang: "it|fr|en" }
+// - Returns: JSON { beauty_score, summary, routine, makeup, hair }
+
 async function readJson(req) {
   return await new Promise((resolve, reject) => {
     let data = "";
     req.on("data", chunk => (data += chunk));
     req.on("end", () => {
-      try { resolve(JSON.parse(data || "{}")); }
-      catch { reject(new Error("Invalid JSON body")); }
+      try {
+        resolve(JSON.parse(data || "{}"));
+      } catch {
+        reject(new Error("Invalid JSON body"));
+      }
     });
     req.on("error", reject);
   });
+}
+
+function extractOutTextFromResponses(data) {
+  // 1) Prefer the convenience field (if present)
+  let outText = (data?.output_text || "").trim();
+  if (outText) return outText;
+
+  // 2) Fallback: scan output[] -> content[] for output_text/summary_text
+  if (Array.isArray(data?.output)) {
+    const chunks = [];
+    for (const item of data.output) {
+      if (!item || !Array.isArray(item.content)) continue;
+      for (const c of item.content) {
+        if (c?.type === "output_text" || c?.type === "summary_text") {
+          if (typeof c.text === "string") chunks.push(c.text);
+        }
+        if (c?.type === "refusal" && typeof c.refusal === "string") {
+          chunks.push(c.refusal);
+        }
+      }
+    }
+    outText = chunks.join("\n").trim();
+    if (outText) return outText;
+  }
+
+  return "";
+}
+
+function cleanJsonFence(text) {
+  return (text || "")
+    .trim()
+    .replace(/^```json/i, "")
+    .replace(/^```/i, "")
+    .replace(/```$/i, "")
+    .trim();
 }
 
 export default async function handler(req, res) {
@@ -56,13 +98,12 @@ Lingua output: ${lang || "it"}.
 Analizza il selfie e genera:
 - tipo pelle probabile + motivazione breve
 - aspetti: pori/rossori/lucidità/disidratazione/imperfezioni/texture
-- beauty_score 0-100
+- beauty_score 0-100 (uniformità, luminosità, aspetto curato)
 - routine mattina/sera (3-5 step, NO brand)
 - 3 tip makeup coerenti
-- 2-3 tip capelli/cute (se deducibile, altrimenti generici)
+- 2-3 tip capelli/cute (se deducibile, altrimenti generici e sicuri)
 `.trim();
 
-    // ✅ Responses API: usare input_text / input_image
     const payloadReq = {
       model: "gpt-4.1-mini",
       input: [
@@ -84,7 +125,7 @@ Analizza il selfie e genera:
     const r = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify(payloadReq)
@@ -97,22 +138,24 @@ Analizza il selfie e genera:
     }
 
     const data = await r.json();
-    const outText = (data.output_text || "").trim();
+    const outText = extractOutTextFromResponses(data);
 
     if (!outText) {
-      console.error("No output_text. Full response:", JSON.stringify(data).slice(0, 4000));
-      return res.status(500).json({ ok: false, error: "no_output_text" });
+      return res.status(500).json({
+        ok: false,
+        error: "no_output_text",
+        hint: "OpenAI response had no output_text and no output[].content[].text.",
+        debug_output_keys: Object.keys(data || {}),
+        debug_output_preview: JSON.stringify(data?.output || []).slice(0, 1200)
+      });
     }
 
-    const cleaned = outText
-      .replace(/^```json/i, "")
-      .replace(/```$/i, "")
-      .trim();
+    const cleaned = cleanJsonFence(outText);
 
     let result;
     try {
       result = JSON.parse(cleaned);
-    } catch {
+    } catch (e) {
       console.error("JSON parse failed. Raw output:", cleaned.slice(0, 2000));
       return res.status(500).json({
         ok: false,
@@ -125,6 +168,6 @@ Analizza il selfie e genera:
 
   } catch (e) {
     console.error("Function crash:", e);
-    return res.status(500).json({ ok: false, error: String(e.message || e) });
+    return res.status(500).json({ ok: false, error: String(e?.message || e) });
   }
 }
