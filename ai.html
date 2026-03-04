@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Beauty Mentor • LiveAvatar PRO</title>
+
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    html, body {
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      background:#000;
+      position:fixed;
+      touch-action:manipulation;
+      -webkit-overflow-scrolling:none;
+      overscroll-behavior:none;
+      font-family: Arial, sans-serif;
+      color:#fff;
+    }
+
+    .stage{
+      position:fixed;
+      inset:0;
+      width:100vw;
+      height:100vh;
+      height:100dvh;
+      background:#000;
+      overflow:hidden;
+    }
+
+    /* IFRAME "cover" (16:9) */
+    iframe{
+      position:absolute;
+      top:50%;
+      left:50%;
+      width:177.78vh;
+      height:100vh;
+      height:100dvh;
+      min-width:100vw;
+      min-height:56.25vw;
+      transform:translate(-50%, -50%);
+      border:none;
+      background:#000;
+    }
+    @media (min-aspect-ratio: 16/9) {
+      iframe { width:100vw; height:56.25vw; min-width:auto; min-height:auto; }
+    }
+
+    /* top-left UI */
+    .ui{
+      position:fixed;
+      top:12px;
+      left:12px;
+      z-index:9999;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      max-width: calc(100vw - 24px);
+      pointer-events:auto;
+    }
+
+    .btn{
+      appearance:none;
+      border:0;
+      background: rgba(255,255,255,0.12);
+      color:#fff;
+      padding:10px 12px;
+      border-radius:12px;
+      font-size:14px;
+      cursor:pointer;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+    .btn.primary{
+      background: rgba(255, 79, 160, 0.65);
+      border-color: rgba(255, 79, 160, 0.9);
+    }
+    .btn.danger{
+      background: rgba(255, 60, 60, 0.45);
+      border-color: rgba(255,60,60,0.75);
+    }
+    .btn:disabled{ opacity:0.55; cursor:not-allowed; }
+
+    /* Bottom-half panel (meta schermo in basso) */
+    .panel{
+      position:fixed;
+      left:12px;
+      right:12px;
+      bottom:12px;
+      z-index:9999;
+
+      height: calc(50dvh - 12px);
+      max-height: calc(50vh - 12px);
+
+      background: rgba(0,0,0,0.62);
+      border:1px solid rgba(255,255,255,0.14);
+      border-radius:18px;
+      overflow:hidden;
+
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+
+      display:none;
+
+      /* iPhone safe-area */
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .panelHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:10px 12px;
+      border-bottom:1px solid rgba(255,255,255,0.12);
+      font-weight:700;
+      font-size:14px;
+    }
+
+    .panelBody{
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      height: calc(100% - 44px); /* header */
+      overflow:auto;
+    }
+
+    .smallText{
+      opacity:0.85;
+      font-size:12px;
+      line-height:1.35;
+    }
+
+    .videoWrap{
+      width:100%;
+      flex:1;
+      background:#000;
+      border-radius:12px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,0.12);
+      position:relative;
+      min-height: 150px;
+    }
+
+    video, canvas{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+
+    .row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    /* Pulsanti sempre visibili (sticky) */
+    .panelControls{
+      position:sticky;
+      bottom:0;
+      background: rgba(0,0,0,0.55);
+      padding-top:8px;
+      padding-bottom:8px;
+      border-top:1px solid rgba(255,255,255,0.10);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 8px;
+      border-radius:999px;
+      background: rgba(255,255,255,0.10);
+      border:1px solid rgba(255,255,255,0.12);
+      font-size:12px;
+    }
+
+    .resultBox{
+      padding:10px;
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:12px;
+      background: rgba(255,255,255,0.06);
+      max-height: 220px;
+      overflow:auto;
+      white-space: pre-wrap;
+      font-size:12px;
+      line-height:1.35;
+    }
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:16px;
+      transform:translateX(-50%);
+      background: rgba(0,0,0,0.7);
+      border:1px solid rgba(255,255,255,0.14);
+      padding:10px 12px;
+      border-radius:999px;
+      font-size:13px;
+      z-index:99999;
+      display:none;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+  </style>
+</head>
+
+<body>
+  <!-- UI Top -->
+  <div class="ui">
+    <button class="btn primary" id="openCamBtn">📷 Analizza Selfie (PRO)</button>
+    <button class="btn" id="sendToAvatarBtn" disabled>👩‍🎤 Invia all’Avatar</button>
+    <button class="btn" id="copyBtn" disabled>📋 Copia Risultato</button>
+  </div>
+
+  <!-- Bottom panel -->
+  <aside class="panel" id="panel">
+    <div class="panelHeader">
+      <span>Beauty Mentor • Camera Live</span>
+      <button class="btn danger" id="closePanelBtn">Chiudi</button>
+    </div>
+
+    <div class="panelBody">
+      <div class="smallText">
+        Consiglio: luce naturale, viso frontale, senza filtri. Analisi cosmetica (non medica).
+      </div>
+
+      <div class="videoWrap">
+        <video id="video" playsinline autoplay muted></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+      </div>
+
+      <div class="row" id="metaRow" style="display:none;">
+        <span class="tag" id="scoreTag">💄 Score: --</span>
+        <span class="tag" id="skinTag">🧴 Pelle: --</span>
+      </div>
+
+      <div class="resultBox" id="resultBox" style="display:none;"></div>
+
+      <!-- Sticky controls always visible -->
+      <div class="panelControls">
+        <div class="row">
+          <button class="btn" id="startBtn">Avvia Camera</button>
+          <button class="btn" id="snapBtn" disabled>Scatta</button>
+          <button class="btn primary" id="analyzeBtn" disabled>🤖 Analizza</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Avatar iframe -->
+  <div class="stage">
+    <iframe
+      id="avatarFrame"
+      src="https://embed.liveavatar.com/v1/8d2b6987-3ad8-49bc-860f-e6f00c939b8e?background=000000"
+      allow="microphone; camera; autoplay; fullscreen"
+      title="LiveAvatar">
+    </iframe>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const panel = document.getElementById('panel');
+    const toast = document.getElementById('toast');
+
+    const openCamBtn = document.getElementById('openCamBtn');
+    const closePanelBtn = document.getElementById('closePanelBtn');
+
+    const startBtn = document.getElementById('startBtn');
+    const snapBtn = document.getElementById('snapBtn');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+
+    const sendToAvatarBtn = document.getElementById('sendToAvatarBtn');
+    const copyBtn = document.getElementById('copyBtn');
+
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const resultBox = document.getElementById('resultBox');
+
+    const metaRow = document.getElementById('metaRow');
+    const scoreTag = document.getElementById('scoreTag');
+    const skinTag = document.getElementById('skinTag');
+
+    const avatarFrame = document.getElementById('avatarFrame');
+
+    let stream = null;
+    let lastAnalysisText = "";
+    let lastAnalysisPayload = null;
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => (toast.style.display = 'none'), 2200);
+    }
+
+    function openPanel() { panel.style.display = 'block'; }
+    function closePanel() { panel.style.display = 'none'; }
+
+    async function startCamera() {
+      try {
+        const constraints = {
+          audio: false,
+          video: {
+            facingMode: "user",
+            width: { ideal: 1080 },
+            height: { ideal: 1440 }
+          }
+        };
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream;
+        snapBtn.disabled = false;
+        showToast("Camera attiva ✅");
+      } catch (err) {
+        console.error(err);
+        showToast("Permesso camera negato o non disponibile");
+      }
+    }
+
+    function stopCamera() {
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+      }
+      snapBtn.disabled = true;
+    }
+
+    function snapPhoto() {
+      if (!stream) return;
+
+      // Snapshot 3:4 (perfetto per “selfie analysis”)
+      const w = 900, h = 1200;
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      const vw = video.videoWidth || 1280;
+      const vh = video.videoHeight || 720;
+
+      const targetAR = w / h;
+      const videoAR = vw / vh;
+
+      let sx = 0, sy = 0, sw = vw, sh = vh;
+      if (videoAR > targetAR) {
+        // crop sides
+        sh = vh;
+        sw = Math.round(vh * targetAR);
+        sx = Math.round((vw - sw) / 2);
+        sy = 0;
+      } else {
+        // crop top/bottom
+        sw = vw;
+        sh = Math.round(vw / targetAR);
+        sx = 0;
+        sy = Math.round((vh - sh) / 2);
+      }
+
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, w, h);
+
+      analyzeBtn.disabled = false;
+      showToast("Foto scattata 📸");
+    }
+
+    function canvasToDataURL() {
+      return canvas.toDataURL('image/jpeg', 0.85);
+    }
+
+    function buildPromptForAvatar(payload) {
+      const s = payload?.summary || {};
+      const routine = payload?.routine || {};
+      const makeup = payload?.makeup || {};
+      const hair = payload?.hair || {};
+
+      return [
+        "ANALISI SELFIE (Beauty Mentor):",
+        `- Beauty Score: ${payload?.beauty_score ?? "--"}/100`,
+        `- Tipo pelle: ${s.skin_type ?? "--"}`,
+        `- Osservazioni: ${(s.concerns || []).join(", ") || "--"}`,
+        s.notes ? `- Note: ${s.notes}` : "",
+        "",
+        "ROUTINE CONSIGLIATA:",
+        `Mattina: ${(routine.morning || []).join(" → ") || "--"}`,
+        `Sera: ${(routine.night || []).join(" → ") || "--"}`,
+        routine.notes ? `Note routine: ${routine.notes}` : "",
+        "",
+        "MAKEUP:",
+        `- ${(makeup.tips || []).join(" | ") || "--"}`,
+        "",
+        "CAPELLI/CUTE:",
+        `- ${(hair.tips || []).join(" | ") || "--"}`,
+        "",
+        "Rispondi al cliente con tono gentile e professionale, senza consigli medici."
+      ].filter(Boolean).join("\n");
+    }
+
+    async function analyzePhoto() {
+      try {
+        analyzeBtn.disabled = true;
+
+        resultBox.style.display = 'block';
+        resultBox.textContent = "Analisi in corso… 🤖";
+
+        const imageDataUrl = canvasToDataURL();
+
+        const res = await fetch("/api/analyze-skin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            image_data_url: imageDataUrl,
+            lang: document.documentElement.lang || "it"
+          })
+        });
+
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(txt || "Errore API");
+        }
+
+        const payload = await res.json();
+        lastAnalysisPayload = payload;
+
+        metaRow.style.display = 'flex';
+        scoreTag.textContent = `💄 Score: ${payload.beauty_score ?? "--"}/100`;
+        skinTag.textContent = `🧴 Pelle: ${payload?.summary?.skin_type ?? "--"}`;
+
+        lastAnalysisText = buildPromptForAvatar(payload);
+        resultBox.textContent = lastAnalysisText;
+
+        copyBtn.disabled = false;
+        sendToAvatarBtn.disabled = false;
+
+        showToast("Analisi completata ✅");
+      } catch (err) {
+        console.error(err);
+        resultBox.style.display = 'block';
+        resultBox.textContent =
+          "Errore durante l’analisi.\n" +
+          "Controlla che esista /api/analyze-skin e che OPENAI_API_KEY sia configurata su Vercel.";
+        showToast("Errore analisi ❌");
+      } finally {
+        analyzeBtn.disabled = false;
+      }
+    }
+
+    async function copyResult() {
+      try {
+        await navigator.clipboard.writeText(lastAnalysisText || "");
+        showToast("Copiato negli appunti 📋");
+      } catch {
+        showToast("Copia non riuscita (browser)");
+      }
+    }
+
+    // Tentativo invio automatico all’avatar (se embed supporta postMessage)
+    // Fallback: copia/incolla nel chat dell’avatar.
+    function sendToAvatar() {
+      if (!lastAnalysisText) return;
+      try {
+        avatarFrame.contentWindow.postMessage({
+          type: "beauty_mentor_analysis",
+          text: lastAnalysisText,
+          payload: lastAnalysisPayload
+        }, "*");
+        showToast("Inviato all’avatar (se supportato) 👩‍🎤");
+      } catch {
+        showToast("Invio diretto non supportato. Usa Copia & Incolla.");
+      }
+    }
+
+    // Events
+    openCamBtn.addEventListener('click', () => openPanel());
+    closePanelBtn.addEventListener('click', () => { closePanel(); stopCamera(); });
+
+    startBtn.addEventListener('click', startCamera);
+    snapBtn.addEventListener('click', snapPhoto);
+    analyzeBtn.addEventListener('click', analyzePhoto);
+
+    copyBtn.addEventListener('click', copyResult);
+    sendToAvatarBtn.addEventListener('click', sendToAvatar);
+
+    // Safety: stop camera when page hidden
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stopCamera();
+    });
+  </script>
+</body>
+</html>
