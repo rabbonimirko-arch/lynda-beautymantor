@@ -1,10 +1,6 @@
 // /api/analyze-skin.js
-// Vercel Serverless Function (Node) — Beauty Mentor PRO (Sephora-like Beauty Score)
-//
-// Input:  { image_data_url: "data:image/jpeg;base64,...", lang: "it|fr|en" }
-// Output: { beauty_score, summary, routine, makeup, hair, metrics? }
-//
-// NOTE: We compute a stable, realistic Beauty Score server-side from component metrics.
+// Beauty Mentor API
+// Analisi selfie cosmetica con output JSON pulito, senza markdown e senza asterischi
 
 async function readJson(req) {
   return await new Promise((resolve, reject) => {
@@ -22,11 +18,9 @@ async function readJson(req) {
 }
 
 function extractOutTextFromResponses(data) {
-  // 1) Prefer convenience field
   let outText = (data?.output_text || "").trim();
   if (outText) return outText;
 
-  // 2) Fallback: scan output[] -> content[]
   if (Array.isArray(data?.output)) {
     const chunks = [];
     for (const item of data.output) {
@@ -43,11 +37,12 @@ function extractOutTextFromResponses(data) {
     outText = chunks.join("\n").trim();
     if (outText) return outText;
   }
+
   return "";
 }
 
 function cleanJsonFence(text) {
-  return (text || "")
+  return String(text || "")
     .trim()
     .replace(/^```json/i, "")
     .replace(/^```/i, "")
@@ -65,23 +60,45 @@ function to10(x) {
   return clamp(x, 0, 10);
 }
 
+function sanitizeText(str) {
+  return String(str || "")
+    .replace(/\*\*/g, "")
+    .replace(/\*/g, "")
+    .replace(/#+/g, "")
+    .replace(/[_`~]/g, "")
+    .replace(/[•▪◦●]/g, "-")
+    .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
+    .replace(/\r/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
+function deepCleanObject(obj) {
+  if (typeof obj === "string") return sanitizeText(obj);
+  if (Array.isArray(obj)) return obj.map(deepCleanObject);
+  if (obj && typeof obj === "object") {
+    const out = {};
+    for (const k in obj) out[k] = deepCleanObject(obj[k]);
+    return out;
+  }
+  return obj;
+}
+
 /**
- * Sephora-like score:
- * - component metrics 0..10 (higher is better)
- * - weighted average -> 0..100
- * - multiplied by photo_quality factor (0.35..1.0)
+ * Beauty Score stabile
+ * metriche 0..10, pesate, con penalità qualità foto
  */
 function computeBeautyScore(metrics) {
   if (!metrics || typeof metrics !== "object") return null;
 
-  // Weights sum = 100
   const weights = {
     uniformity: 20,
     brightness: 15,
     texture: 15,
     hydration: 10,
-    pores: 10,        // higher = better (pores less visible)
-    redness: 10,      // higher = better (less redness)
+    pores: 10,
+    redness: 10,
     vitality: 10,
     symmetry: 5,
     harmony: 5
@@ -106,20 +123,17 @@ function computeBeautyScore(metrics) {
     wsum += weights[k];
   }
 
-  // 0..10
   const avg10 = sum / Math.max(1, wsum);
-
-  // Photo quality factor: 0.35..1.0 (penalize if face obstructed / too dark / blurry)
   const pq = clamp(metrics.photo_quality_factor ?? metrics.photo_quality ?? 1, 0.35, 1.0);
-
-  // Convert to 0..100
   const score = Math.round(avg10 * 10 * pq);
 
   return clamp(score, 0, 100);
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+  if (req.method !== "POST") {
+    return res.status(405).send("Method Not Allowed");
+  }
 
   try {
     const body = await readJson(req);
@@ -136,16 +150,26 @@ export default async function handler(req, res) {
 
     const outLang = (lang || "it").toLowerCase();
 
-    // SYSTEM: strict JSON, cosmetic only
     const systemText = `
-You are Beauty Mentor, a professional beauty consultant (cosmetic/aesthetic only).
-You must NOT provide medical diagnosis and must NOT prescribe drugs.
-If you detect anything potentially clinical or severe, advise: "Consult a dermatologist."
+You are Beauty Mentor, a professional beauty consultant focused only on cosmetic and aesthetic analysis.
 
-Return ONLY valid JSON and ONLY JSON in the exact structure below.
-All strings must be written in: ${outLang}.
+You must not provide medical diagnosis.
+You must not prescribe drugs.
+If something appears potentially clinical or severe, advise the user to consult a dermatologist.
 
-STRUCTURE (JSON only):
+Return only valid JSON and only JSON in the exact structure below.
+All strings must be written in ${outLang}.
+
+Do not use markdown.
+Do not use asterisks.
+Do not use double asterisks.
+Do not use bullet symbols.
+Do not use hashtags.
+Do not use emphasis.
+Do not wrap words in bold.
+Return plain text only inside JSON string values.
+
+JSON structure:
 {
   "beauty_score": number,
   "summary": {
@@ -160,7 +184,6 @@ STRUCTURE (JSON only):
   },
   "makeup": { "tips": [string] },
   "hair": { "tips": [string] },
-
   "metrics": {
     "uniformity": 0-10,
     "brightness": 0-10,
@@ -175,33 +198,45 @@ STRUCTURE (JSON only):
     "why_photo_quality": string
   }
 }
-
-Rules:
-- Metrics must be realistic; higher is better.
-- "photo_quality_factor" must penalize if: face not visible, obstructed, too far, too dark, too blurry.
-- The "beauty_score" you output is a preliminary score; server may recompute.
 `.trim();
 
-    // USER: asks for PRO metrics + cosmetic advice only
     const userText = `
 Analyze the selfie and produce:
-1 Cosmetic assessment (skin_type + concerns + notes)
-2 A simple morning routine (3-5 steps) and night routine (3-5 steps), NO brands, NO medical claims
-3 Makeup tips (2-4 concise tips)
-4 Hair/scalp tips (2-4 concise tips; if not visible, safe general tips)
+1. Cosmetic assessment with skin type, concerns and notes
+2. Morning routine with 3 to 5 steps
+3. Night routine with 3 to 5 steps
+4. Makeup tips with 2 to 4 concise suggestions
+5. Hair and scalp tips with 2 to 4 concise suggestions
 
-Sephora-like scoring:
-- Fill the "metrics" fields (0-10 each) with best-effort.
-- Provide a realistic "photo_quality_factor" (0.35..1.0) + short reason.
+Rules:
+- No brands
+- No medical claims
+- No prescriptions
+- All output must be plain text
+- No markdown
+- No bold
+- No asterisks
+- No double asterisks
+- No bullet symbols
 
-If the face is not clearly visible, set skin_type = non_determinata, add concern about photo validity, and set photo_quality_factor low.
-Return JSON ONLY.
+Scoring:
+- Fill metrics from 0 to 10
+- Use photo_quality_factor from 0.35 to 1.0
+- If face is not visible, obstructed, too dark, too blurry or too far:
+  set skin_type to non_determinata
+  mention that the photo quality limits the analysis
+  reduce photo_quality_factor
+
+Return JSON only.
 `.trim();
 
     const payloadReq = {
       model: "gpt-4.1-mini",
       input: [
-        { role: "system", content: [{ type: "input_text", text: systemText }] },
+        {
+          role: "system",
+          content: [{ type: "input_text", text: systemText }]
+        },
         {
           role: "user",
           content: [
@@ -210,7 +245,7 @@ Return JSON ONLY.
           ]
         }
       ],
-      max_output_tokens: 1200
+      max_output_tokens: 1400
     };
 
     const r = await fetch("https://api.openai.com/v1/responses", {
@@ -225,7 +260,11 @@ Return JSON ONLY.
     if (!r.ok) {
       const errTxt = await r.text();
       console.error("OpenAI error:", errTxt);
-      return res.status(500).json({ ok: false, error: "openai_error", details: errTxt });
+      return res.status(500).json({
+        ok: false,
+        error: "openai_error",
+        details: errTxt
+      });
     }
 
     const data = await r.json();
@@ -254,19 +293,27 @@ Return JSON ONLY.
       });
     }
 
-    // ---- Sephora-like scoring override (stable & realistic) ----
+    // pulizia completa di tutto il JSON
+    result = deepCleanObject(result);
+
+    // Beauty score stabile ricalcolato lato server
     const computed = computeBeautyScore(result?.metrics);
     if (computed !== null) {
       result.beauty_score = computed;
     } else {
-      // fallback if metrics missing
       result.beauty_score = clamp(result?.beauty_score ?? 0, 0, 100);
     }
+
+    // ulteriore pulizia finale
+    result = deepCleanObject(result);
 
     return res.status(200).json(result);
 
   } catch (e) {
     console.error("Function crash:", e);
-    return res.status(500).json({ ok: false, error: String(e?.message || e) });
+    return res.status(500).json({
+      ok: false,
+      error: String(e?.message || e)
+    });
   }
 }
