@@ -8,6 +8,11 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    :root{
+      --app-h: 100vh;
+      --app-w: 100vw;
+    }
+
     html, body {
       width: 100%;
       height: 100%;
@@ -36,8 +41,8 @@
     }
 
     .frame {
-      width: min(100vw, calc(100vh * 9 / 16));
-      height: min(100vh, calc(100vw * 16 / 9));
+      width: min(var(--app-w), calc(var(--app-h) * 9 / 16));
+      height: min(var(--app-h), calc(var(--app-w) * 16 / 9));
       background: #000;
       border: 0;
       border-radius: 0;
@@ -78,6 +83,7 @@
       flex-wrap:wrap;
       max-width:calc(100vw - 24px);
     }
+
     .btn{
       border:none;
       padding:10px 12px;
@@ -94,76 +100,177 @@
     .btn.danger{ background:rgba(255,60,60,0.55); border-color:rgba(255,60,60,0.80); }
     .btn:disabled{opacity:0.55;cursor:not-allowed;}
 
-    /* CAMERA OVERLAY */
-    .camOverlay{position:fixed;inset:0;z-index:99999;background:#000;display:none;}
+    .camOverlay{
+      position:fixed;
+      inset:0;
+      z-index:99999;
+      background:#000;
+      display:none;
+    }
+
     .camHeader{
-      position:absolute;top:0;left:0;right:0;z-index:5;
-      display:flex;justify-content:space-between;align-items:center;
-      padding:12px;padding-top:calc(12px + env(safe-area-inset-top));
+      position:absolute;
+      top:0;
+      left:0;
+      right:0;
+      z-index:5;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:12px;
+      padding-top:calc(12px + env(safe-area-inset-top));
       background:linear-gradient(to bottom, rgba(0,0,0,0.78), rgba(0,0,0,0.25));
       border-bottom:1px solid rgba(255,255,255,0.12);
-      backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       font-weight:800;
     }
 
-    .viewport{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+    .viewport{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
     .videoWrap{
       position:relative;
       width:min(100vw, calc(100dvh * 9 / 16));
       height:min(100dvh, calc(100vw * 16 / 9));
       aspect-ratio:9/16;
-      overflow:hidden;background:#000;border-radius:18px;border:1px solid rgba(255,255,255,0.12);
+      overflow:hidden;
+      background:#000;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,0.12);
     }
-    @media (max-aspect-ratio: 9/16){
-      .videoWrap{width:100vw;height:100dvh;border-radius:0;border:none;}
-    }
-    video,canvas{width:100%;height:100%;object-fit:cover;display:block}
 
-    .faceFrame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
-    .frameShape{width:72%;height:78%;border:2px solid rgba(255,255,255,0.55);border-radius:46px;box-shadow: 0 0 0 9999px rgba(0,0,0,0.18);}
-    .hintText{position:absolute;bottom:96px;left:12px;right:12px;text-align:center;font-size:12px;opacity:0.92;}
+    @media (max-aspect-ratio: 9/16){
+      .videoWrap{
+        width:100vw;
+        height:100dvh;
+        border-radius:0;
+        border:none;
+      }
+    }
+
+    video,canvas{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+
+    .faceFrame{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      pointer-events:none;
+    }
+
+    .frameShape{
+      width:72%;
+      height:78%;
+      border:2px solid rgba(255,255,255,0.55);
+      border-radius:46px;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.18);
+    }
+
+    .hintText{
+      position:absolute;
+      bottom:96px;
+      left:12px;
+      right:12px;
+      text-align:center;
+      font-size:12px;
+      opacity:0.92;
+    }
 
     .faceBox{
-      position:absolute;border:2px solid rgba(255,79,160,0.95);
-      border-radius:14px;display:none;pointer-events:none;
+      position:absolute;
+      border:2px solid rgba(255,79,160,0.95);
+      border-radius:14px;
+      display:none;
+      pointer-events:none;
       box-shadow:0 0 18px rgba(255,79,160,0.35);
     }
 
     .centerIndicator{
-      position:absolute;top:calc(64px + env(safe-area-inset-top));
-      left:50%;transform:translateX(-50%);z-index:6;
-      display:inline-flex;align-items:center;gap:8px;
-      padding:8px 12px;border-radius:999px;
-      background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.14);
-      backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
-      font-size:13px;font-weight:700;
+      position:absolute;
+      top:calc(64px + env(safe-area-inset-top));
+      left:50%;
+      transform:translateX(-50%);
+      z-index:6;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(0,0,0,0.45);
+      border:1px solid rgba(255,255,255,0.14);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      font-size:13px;
+      font-weight:700;
     }
-    .dot{width:10px;height:10px;border-radius:999px;background:rgba(255,120,120,0.95);box-shadow:0 0 14px rgba(255,120,120,0.45);}
-    .centerIndicator.ok .dot{background:rgba(120,255,160,0.95);box-shadow:0 0 14px rgba(120,255,160,0.45);}
+
+    .dot{
+      width:10px;
+      height:10px;
+      border-radius:999px;
+      background:rgba(255,120,120,0.95);
+      box-shadow:0 0 14px rgba(255,120,120,0.45);
+    }
+
+    .centerIndicator.ok .dot{
+      background:rgba(120,255,160,0.95);
+      box-shadow:0 0 14px rgba(120,255,160,0.45);
+    }
 
     .sheet{
-      position:absolute;left:12px;right:12px;
+      position:absolute;
+      left:12px;
+      right:12px;
       bottom:calc(150px + env(safe-area-inset-bottom));
-      z-index:7;max-height:32dvh;overflow:auto;
-      padding:10px;border-radius:16px;border:1px solid rgba(255,255,255,0.12);
+      z-index:7;
+      max-height:32dvh;
+      overflow:auto;
+      padding:10px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,0.12);
       background:rgba(0,0,0,0.50);
-      backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
-      display:none;white-space:pre-wrap;font-size:12px;line-height:1.35;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display:none;
+      white-space:pre-wrap;
+      font-size:12px;
+      line-height:1.35;
     }
 
     .pasteBox{
-      position:absolute;left:12px;right:12px;
+      position:absolute;
+      left:12px;
+      right:12px;
       bottom:calc(92px + env(safe-area-inset-bottom));
       z-index:8;
-      display:flex;flex-direction:column;gap:8px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
     }
+
     .pasteHint{
-      font-size:12px;opacity:0.92;
+      font-size:12px;
+      opacity:0.92;
       background:rgba(0,0,0,0.45);
       border:1px solid rgba(255,255,255,0.12);
-      border-radius:14px;padding:10px;
-      backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
+      border-radius:14px;
+      padding:10px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
+
     textarea{
       width:100%;
       min-height:90px;
@@ -179,23 +286,37 @@
     }
 
     .camControls{
-      position:absolute;left:0;right:0;bottom:0;z-index:9;
-      padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom));
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:0;
+      z-index:9;
+      padding:12px;
+      padding-bottom:calc(12px + env(safe-area-inset-bottom));
       background:linear-gradient(to top, rgba(0,0,0,0.82), rgba(0,0,0,0.22));
       border-top:1px solid rgba(255,255,255,0.10);
-      backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
-    .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
 
-    /* MODAL RISULTATO */
+    .row{
+      display:flex;
+      gap:10px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+
     .resultModal{
-      position:fixed;inset:0;z-index:999999;
+      position:fixed;
+      inset:0;
+      z-index:999999;
       background:rgba(0,0,0,0.68);
       display:none;
       align-items:center;
       justify-content:center;
       padding:14px;
     }
+
     .resultCard{
       width:min(760px, 100%);
       max-height:86dvh;
@@ -209,6 +330,7 @@
       display:flex;
       flex-direction:column;
     }
+
     .resultHeader{
       display:flex;
       align-items:center;
@@ -217,16 +339,19 @@
       border-bottom:1px solid rgba(255,255,255,0.12);
       font-weight:900;
     }
+
     .resultBody{
       padding:12px;
       overflow:auto;
     }
+
     .pillRow{
       display:flex;
       gap:8px;
       flex-wrap:wrap;
       margin-bottom:10px;
     }
+
     .pill{
       font-size:12px;
       padding:8px 10px;
@@ -234,12 +359,14 @@
       background:rgba(255,255,255,0.10);
       border:1px solid rgba(255,255,255,0.12);
     }
+
     .sectionTitle{
       font-size:13px;
       font-weight:900;
       margin:12px 0 6px;
       opacity:.95;
     }
+
     .box{
       border-radius:14px;
       border:1px solid rgba(255,255,255,0.12);
@@ -249,6 +376,7 @@
       font-size:12px;
       line-height:1.35;
     }
+
     .resultFooter{
       padding:12px;
       border-top:1px solid rgba(255,255,255,0.12);
@@ -259,11 +387,19 @@
     }
 
     .toast{
-      position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
-      z-index:9999999;background:rgba(0,0,0,0.74);
+      position:fixed;
+      left:50%;
+      bottom:16px;
+      transform:translateX(-50%);
+      z-index:9999999;
+      background:rgba(0,0,0,0.74);
       border:1px solid rgba(255,255,255,0.14);
-      padding:10px 12px;border-radius:999px;font-size:13px;display:none;
-      backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);
+      padding:10px 12px;
+      border-radius:999px;
+      font-size:13px;
+      display:none;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
 
     ::-webkit-scrollbar { width: 0; height: 0; }
@@ -294,7 +430,6 @@
     </div>
   </div>
 
-  <!-- CAMERA OVERLAY -->
   <div class="camOverlay" id="camOverlay">
     <div class="camHeader">
       <span>Beauty Mentor • Camera 9:16</span>
@@ -324,7 +459,11 @@
 
     <div class="pasteBox">
       <div class="pasteHint">
-        
+        Incolla qui un report. Io preparo un messaggio pulito, senza simboli strani, pronto da incollare nella chat dell’avatar.
+      </div>
+
+      <textarea id="reportInput" placeholder="Incolla qui il report JSON o testo dell’analisi…"></textarea>
+
       <div class="row">
         <button class="btn" id="usePastedBtn">🧠 Prepara testo per la chat</button>
         <button class="btn" id="clearPastedBtn">🧽 Svuota</button>
@@ -340,7 +479,6 @@
     </div>
   </div>
 
-  <!-- MODAL RISULTATO -->
   <div class="resultModal" id="resultModal">
     <div class="resultCard">
       <div class="resultHeader">
@@ -368,7 +506,38 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    /* ====== iframe behaviors ====== */
+    (function () {
+      const root = document.documentElement;
+
+      function setStableViewport() {
+        root.style.setProperty('--app-h', window.innerHeight + 'px');
+        root.style.setProperty('--app-w', window.innerWidth + 'px');
+      }
+
+      setStableViewport();
+
+      let baseHeight = window.innerHeight;
+
+      window.addEventListener('resize', () => {
+        const currentHeight = window.innerHeight;
+        const delta = baseHeight - currentHeight;
+
+        if (delta > 180) {
+          return;
+        }
+
+        baseHeight = currentHeight;
+        setStableViewport();
+      });
+
+      window.addEventListener('orientationchange', () => {
+        setTimeout(() => {
+          baseHeight = window.innerHeight;
+          setStableViewport();
+        }, 300);
+      });
+    })();
+
     const agentFrame = document.getElementById('agentFrame');
     const loading = document.getElementById('loading');
 
@@ -376,20 +545,6 @@
       if (loading) loading.style.display = 'none';
     });
 
-    // ✅ FIX ANTI-RESET:
-    // - Disattivo fullscreen automatico: può resettare la sessione dell’iframe D-ID su iOS/Android
-    // - Disattivo anche il blocco "double tap preventDefault": può interferire con i click interni dell’iframe
-    //
-    // (Se vuoi fullscreen, meglio farlo con un bottone dedicato esterno, non al primo tap)
-    //
-    // function requestFs() { ... }
-    // window.addEventListener('touchstart', requestFs, { once: true, passive: true });
-    // window.addEventListener('click', requestFs, { once: true });
-    //
-    // let lastTouchEnd = 0;
-    // document.addEventListener('touchend', (event) => { ... }, { passive: false });
-
-    /* ====== Camera + Analysis ====== */
     const camOverlay = document.getElementById('camOverlay');
     const toast = document.getElementById('toast');
 
@@ -415,7 +570,6 @@
     const usePastedBtn = document.getElementById('usePastedBtn');
     const clearPastedBtn = document.getElementById('clearPastedBtn');
 
-    // Modal risultato
     const resultModal = document.getElementById('resultModal');
     const resultCloseBtn = document.getElementById('resultCloseBtn');
     const resultCopyBtn = document.getElementById('resultCopyBtn');
@@ -445,6 +599,18 @@
     }
 
     function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+    function cleanForAvatarText(text) {
+      return String(text || "")
+        .replace(/\*\*/g, "")
+        .replace(/\*/g, "")
+        .replace(/#/g, "")
+        .replace(/[_`~]/g, "")
+        .replace(/[•▪◦●]/g, "-")
+        .replace(/\n{3,}/g, "\n\n")
+        .replace(/[ \t]{2,}/g, " ")
+        .trim();
+    }
 
     openCamBtn.onclick = () => {
       camOverlay.style.display = 'block';
@@ -497,6 +663,7 @@
           setCenter(false, "Centra il volto");
           return;
         }
+
         const bb = dets[0].boundingBox;
         const xMin = bb.xCenter - bb.width/2;
         const yMin = bb.yCenter - bb.height/2;
@@ -562,7 +729,7 @@
       }catch(err){
         console.error(err);
         sheet.style.display='block';
-        sheet.textContent = "ERRORE CAMERA: " + (err?.message || err);
+        sheet.textContent = cleanForAvatarText("ERRORE CAMERA: " + (err?.message || err));
       }
     };
 
@@ -570,17 +737,24 @@
       if(!stream || !video.videoWidth) return;
 
       const W=900, H=1600;
-      canvas.width=W; canvas.height=H;
+      canvas.width=W;
+      canvas.height=H;
       const ctx = canvas.getContext('2d');
 
       const vw = video.videoWidth, vh = video.videoHeight;
       const targetAR = W/H, videoAR = vw/vh;
-      let sx=0,sy=0,sw=vw,sh=vh;
+      let sx=0, sy=0, sw=vw, sh=vh;
+
       if(videoAR > targetAR){
-        sh = vh; sw = Math.round(vh * targetAR); sx = Math.round((vw - sw)/2);
+        sh = vh;
+        sw = Math.round(vh * targetAR);
+        sx = Math.round((vw - sw)/2);
       }else{
-        sw = vw; sh = Math.round(vw / targetAR); sy = Math.round((vh - sh)/2);
+        sw = vw;
+        sh = Math.round(vw / targetAR);
+        sy = Math.round((vh - sh)/2);
       }
+
       ctx.drawImage(video, sx, sy, sw, sh, 0, 0, W, H);
 
       if(!lastFace){
@@ -590,6 +764,7 @@
         showToast("Volto non rilevato ❌");
         return;
       }
+
       if(!faceOk){
         sheet.style.display='block';
         sheet.textContent = "Volto troppo lontano. Avvicinati un po’.";
@@ -621,7 +796,8 @@
       const out = document.createElement('canvas');
       const outW = 720;
       const outH = clamp(Math.round(outW * (h / w)), 720, 960);
-      out.width = outW; out.height = outH;
+      out.width = outW;
+      out.height = outH;
 
       const octx = out.getContext('2d');
       octx.drawImage(canvas, x, y, w, h, 0, 0, out.width, out.height);
@@ -631,53 +807,73 @@
 
     function buildChatTextFromAnalysisPayload(payload){
       const summary = payload?.summary || {};
-      return [
-        "Ciao! Ho appena fatto un’analisi Beauty Mentor. Vorrei una routine personalizzata (senza consigli medici):",
+      const score = cleanForAvatarText(payload?.beauty_score ?? "--");
+      const skinType = cleanForAvatarText(summary.skin_type ?? "--");
+      const concerns = Array.isArray(summary.concerns)
+        ? summary.concerns.map(x => cleanForAvatarText(x)).join(", ")
+        : "--";
+      const notes = cleanForAvatarText(summary.notes || "");
+
+      return cleanForAvatarText([
+        "Ciao! Ho appena fatto un’analisi Beauty Mentor. Vorrei una routine personalizzata senza consigli medici.",
         "",
-        `• Beauty Score: ${payload?.beauty_score ?? "--"}/100`,
-        `• Tipo pelle: ${summary.skin_type ?? "--"}`,
-        `• Osservazioni: ${(summary.concerns || []).join(", ") || "--"}`,
-        summary.notes ? `• Note: ${summary.notes}` : "",
+        `Beauty Score: ${score}/100`,
+        `Tipo pelle: ${skinType}`,
+        `Osservazioni: ${concerns}`,
+        notes ? `Note: ${notes}` : "",
         "",
         "Mi prepari:",
-        "1) Routine MATTINA (step + texture/prodotti consigliati)",
-        "2) Routine SERA",
-        "3) 1-2 consigli makeup naturali",
-        "4) 1-2 consigli cute/capelli in base al report",
-      ].filter(Boolean).join("\n");
+        "1. Routine mattina con step e texture consigliate",
+        "2. Routine sera",
+        "3. Uno o due consigli makeup naturali",
+        "4. Uno o due consigli cute e capelli in base al report"
+      ].filter(Boolean).join("\n"));
     }
 
     function buildSummaryText(payload){
       const s = payload?.summary || {};
-      const score = payload?.beauty_score ?? "--";
-      const concerns = (s.concerns || []).map(x => `- ${x}`).join("\n") || "- —";
-      return [
+      const score = cleanForAvatarText(payload?.beauty_score ?? "--");
+      const skinType = cleanForAvatarText(s.skin_type ?? "—");
+      const concerns = Array.isArray(s.concerns)
+        ? s.concerns.map(x => "- " + cleanForAvatarText(x)).join("\n")
+        : "- —";
+      const notes = cleanForAvatarText(s.notes || "");
+
+      return cleanForAvatarText([
         `Beauty Score: ${score}/100`,
-        `Tipo pelle: ${s.skin_type ?? "—"}`,
+        `Tipo pelle: ${skinType}`,
         "",
         "Osservazioni:",
         concerns,
         "",
-        s.notes ? `Note: ${s.notes}` : ""
-      ].filter(Boolean).join("\n");
+        notes ? `Note: ${notes}` : ""
+      ].filter(Boolean).join("\n"));
     }
 
     function buildPastedPrompt(txt){
-      return (
-        "Ciao! Non puoi vedere direttamente la foto, ma puoi leggere questo REPORT.\n" +
-        "Per favore: estrai le info e dammi una routine skincare + capelli + makeup (stile elegante, professionale, niente consigli medici).\n\n" +
-        "REPORT:\n" + txt
+      const cleanTxt = cleanForAvatarText(txt);
+
+      return cleanForAvatarText(
+        "Ciao! Non puoi vedere direttamente la foto, ma puoi leggere questo report.\n" +
+        "Per favore estrai le informazioni e dammi una routine skincare, capelli e makeup, in stile elegante e professionale, senza consigli medici.\n\n" +
+        "Report:\n" + cleanTxt
       );
     }
 
     function openResultModal(){
       pillRow.innerHTML = "";
-      const score = (lastPayload && typeof lastPayload.beauty_score !== "undefined") ? `${lastPayload.beauty_score}/100` : "—";
-      const type = lastPayload?.summary?.skin_type || "—";
+
+      const score = (lastPayload && typeof lastPayload.beauty_score !== "undefined")
+        ? `${cleanForAvatarText(lastPayload.beauty_score)}/100`
+        : "—";
+
+      const type = cleanForAvatarText(lastPayload?.summary?.skin_type || "—");
+
       const pills = [
         { t: `Beauty Score: ${score}` },
         { t: `Pelle: ${type}` }
       ];
+
       pills.forEach(p => {
         const el = document.createElement("div");
         el.className = "pill";
@@ -685,8 +881,8 @@
         pillRow.appendChild(el);
       });
 
-      resultSummaryBox.textContent = lastPayload ? buildSummaryText(lastPayload) : "—";
-      resultChatBox.textContent = lastChatText || "—";
+      resultSummaryBox.textContent = cleanForAvatarText(lastPayload ? buildSummaryText(lastPayload) : "—");
+      resultChatBox.textContent = cleanForAvatarText(lastChatText || "—");
       resultModal.style.display = "flex";
     }
 
@@ -696,15 +892,24 @@
         showToast("Analisi…");
 
         const faceDataUrl = cropFaceDataURL();
+        const API_URL = window.location.origin + "/api/analyze-skin";
 
-        const resp = await fetch("/api/analyze-skin", {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({
-            image_data_url: faceDataUrl,
-            lang: document.documentElement.lang || "it"
-          })
-        });
+        let resp;
+        try {
+          resp = await fetch(API_URL, {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify({
+              image_data_url: faceDataUrl,
+              lang: document.documentElement.lang || "it"
+            })
+          });
+        } catch (fetchErr) {
+          throw new Error(
+            "Connessione API non riuscita. Apri questa pagina da Vercel HTTPS e verifica api analyze-skin. Dettaglio: " +
+            (fetchErr?.message || fetchErr)
+          );
+        }
 
         if(!resp.ok){
           const t = await resp.text();
@@ -713,8 +918,7 @@
 
         const payload = await resp.json();
         lastPayload = payload;
-
-        lastChatText = buildChatTextFromAnalysisPayload(payload);
+        lastChatText = cleanForAvatarText(buildChatTextFromAnalysisPayload(payload));
 
         copyBtn.disabled = false;
         openChatPasteBtn.disabled = false;
@@ -725,7 +929,7 @@
       }catch(err){
         console.error(err);
         sheet.style.display='block';
-        sheet.textContent = "Errore analisi: " + (err?.message || err);
+        sheet.textContent = cleanForAvatarText("Errore analisi: " + (err?.message || err));
         showToast("Errore analisi ❌");
       }finally{
         analyzeBtn.disabled = false;
@@ -738,8 +942,9 @@
         showToast("Incolla un report ✍️");
         return;
       }
+
       lastPayload = null;
-      lastChatText = buildPastedPrompt(txt);
+      lastChatText = cleanForAvatarText(buildPastedPrompt(txt));
 
       copyBtn.disabled = false;
       openChatPasteBtn.disabled = false;
@@ -750,8 +955,8 @@
       el.textContent = "Report incollato";
       pillRow.appendChild(el);
 
-      resultSummaryBox.textContent = "Sintesi: report incollato (nessun JSON strutturato).";
-      resultChatBox.textContent = lastChatText;
+      resultSummaryBox.textContent = "Sintesi: report incollato.";
+      resultChatBox.textContent = cleanForAvatarText(lastChatText);
 
       resultModal.style.display = "flex";
       showToast("Testo pronto ✅");
@@ -764,7 +969,7 @@
 
     copyBtn.onclick = async () => {
       try{
-        await navigator.clipboard.writeText(lastChatText || "");
+        await navigator.clipboard.writeText(cleanForAvatarText(lastChatText || ""));
         showToast("Copiato 📋");
       }catch{
         showToast("Copia non riuscita");
@@ -772,33 +977,33 @@
     };
 
     openChatPasteBtn.onclick = () => {
-      if(!lastChatText){ showToast("Nessun testo pronto"); return; }
+      if(!lastChatText){
+        showToast("Nessun testo pronto");
+        return;
+      }
       openResultModal();
     };
 
-    // Modal actions
-    resultCloseBtn.onclick = () => { resultModal.style.display = "none"; };
+    resultCloseBtn.onclick = () => {
+      resultModal.style.display = "none";
+    };
 
     resultCopyBtn.onclick = async () => {
       try{
-        await navigator.clipboard.writeText(lastChatText || "");
+        await navigator.clipboard.writeText(cleanForAvatarText(lastChatText || ""));
         showToast("Copiato 📋");
       }catch{
         showToast("Copia non riuscita");
       }
     };
 
-    // ✅ FIX ANTI-RESET:
-    // - NON facciamo agentFrame.focus()
-    // - chiudiamo overlay con un piccolo delay
     resultOpenAvatarBtn.onclick = async () => {
       try{
-        await navigator.clipboard.writeText(lastChatText || "");
+        await navigator.clipboard.writeText(cleanForAvatarText(lastChatText || ""));
       }catch(e){}
 
       resultModal.style.display = "none";
 
-      // Delay per evitare “reload/reset” dell’iframe su molti telefoni
       setTimeout(() => {
         camOverlay.style.display = "none";
       }, 350);
